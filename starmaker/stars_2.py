@@ -57,6 +57,11 @@ def load_init(filename):
 		'savetofile'
 	]
 
+	bg_colors = [
+		'black',
+		'white'
+	]
+
 	for line in initfile:
 		if line[0] != '#' and len(line) > 1:
 			terms = re.split(r'\s*=\s*',line)
@@ -64,6 +69,12 @@ def load_init(filename):
 
 			if terms[0] == 'iterations':
 				init[terms[0]] = float(value)
+
+			if terms[0] == 'background':
+				if value in bg_colors:
+					init[terms[0]] = value
+				else:
+					print "Error: unidentified background color: "+value
 
 			if terms[0] in identifieres_bool:
 				init[terms[0]] = parse_bool(value)
@@ -105,9 +116,14 @@ def norm_color(r,g,b):
 	if l<0:
 		l=0
 	d = u-l
-	r_new = (r-l)/d
-	g_new = (g-l)/d
-	b_new = (b-l)/d
+	if d != 0:
+		r_new = (r-l)/d
+		g_new = (g-l)/d
+		b_new = (b-l)/d
+	else:
+		r_new = r
+		g_new = g
+		b_new = b
 	if r_new>1:
 		r_new = 1
 	if g_new>1:
@@ -123,6 +139,14 @@ def norm_value(value, bound_l=0.0, bound_u=1.0):
 	elif value > bound_u:
 		return bound_u
 	return value
+
+def get_new_color_value(oldval, vglobal, depth, vray, raynumber, vlocal, mindelta=0.0):
+	global_variation = vglobal[depth%len(vglobal)]
+	ray_variation = vray[raynumber%len(vray)]
+	random_variation = np.random.uniform(mindelta, vlocal)
+	if random.randrange(0,10) > 5:
+		random_variation *= -1
+	return norm_value(oldval + global_variation + ray_variation + random_variation)
 
 def write_linecollection_to_file(filename, collection, dimensions, background='white'):
 	if not os.path.isfile(filename):
@@ -193,22 +217,30 @@ def printstar_nonrek_colorvariation(init_dict):
 	widthvariation 	= init_dict['raywidth_vglobal']
 	number_of_widthvariations = len(widthvariation)
 
+	color_vglobal 	= [init_dict['color_r_vglobal'], init_dict['color_g_vglobal'], init_dict['color_b_vglobal'], init_dict['color_a_vglobal']]
+
 	# global-by-ray modifiing rules:
 
+	color_vray 	= [init_dict['color_r_vray'], init_dict['color_g_vray'], init_dict['color_b_vray'], init_dict['color_a_vray']]
+
 	# local modifiing rules:	
-	col_var_bound 	= [init_dict['color_r_vlocal'], init_dict['color_g_vlocal'], init_dict['color_b_vlocal'], init_dict['color_a_vlocal']]
-	col_var_bound = col_var_bound[0]
+	color_vlocal 	= [init_dict['color_r_vlocal'], init_dict['color_g_vlocal'], init_dict['color_b_vlocal'], init_dict['color_a_vlocal']]
+
+	#print color_vglobal
+	#print color_vray
+	#print color_vlocal
 
 	# other parameters:
 	middlestar 		= init_dict['centerstar']
 	maxiter 		= init_dict['iterations']
 	save 			= init_dict['savetofile']
+	background		= init_dict['background']
 
 	currentdate = date.today()
 	dicname = "stars_" + date.isoformat(currentdate)
 
 	color_delta = 0.0
-	color_delta_bound = col_var_bound/2
+	color_delta_bound = color_vlocal[0]/2
 
 	'''
 	print ("startlength    : %.2f" % startlength)
@@ -267,7 +299,7 @@ def printstar_nonrek_colorvariation(init_dict):
 			delta_angle = 2*math.pi/rays
 
 			color_current = currentstatus[7]
-			colordelta_current = currentstatus[8]			
+			#colordelta_current = currentstatus[8]			
 
 			for i in range(0, rays):
 				new_angle = currentstatus[4] + i*delta_angle
@@ -279,19 +311,26 @@ def printstar_nonrek_colorvariation(init_dict):
 				ymin = min(ymin, end_y)
 				ymax = max(ymax, end_y)
 
+				new_color = [0,0,0,0]
+				for c in range(4):
+					new_color[c] = get_new_color_value(color_current[c], color_vglobal[c], currentstatus[0], color_vray[c], i, color_vlocal[c], 0)
+				'''
 				new_r = get_noized_color_value(color_current[0], col_var_bound, 0, colordelta_current[0])
 				new_g = get_noized_color_value(color_current[1], col_var_bound, 0, colordelta_current[1])
 				new_b = get_noized_color_value(color_current[2], col_var_bound, 0, colordelta_current[2])
 				new_a = norm_value(get_noized_color_value(color_current[3], col_var_bound))
+				'''
 
-				[nr, ng, nb] = norm_color(new_r, new_g, new_b)
-	
+				[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
+
+				'''
 				new_dr = norm_value(get_noized_value(colordelta_current[0], color_delta_bound/2), -color_delta_bound, color_delta_bound)
 				new_dg = norm_value(get_noized_value(colordelta_current[1], color_delta_bound/2), -color_delta_bound, color_delta_bound)
 				new_db = norm_value(get_noized_value(colordelta_current[2], color_delta_bound/2), -color_delta_bound, color_delta_bound)
+				'''
 
 				lines.append([(currentstatus[1],currentstatus[2]), (end_x,end_y)])
-				linecolors.append((new_r, new_g, new_b, new_a))
+				linecolors.append((nr, ng, nb, new_color[3]))
 				linethicknesses.append(currentstatus[6])
 
 				s.append([
@@ -302,21 +341,22 @@ def printstar_nonrek_colorvariation(init_dict):
 						new_angle,
 						currentstatus[5] + rayvariation[currentstatus[0]%number_of_rayvariations],
 						currentstatus[6] + widthvariation[currentstatus[0]%number_of_widthvariations],
-						[nr, ng, nb, new_a],
-						[new_dr, new_dg, new_db]
+						[nr, ng, nb, new_color[3]]#,
+					#	[new_dr, new_dg, new_db]
 					])
 
 			if middlestar:
-				new_r = get_noized_color_value(color_current[0], col_var_bound, 0, colordelta_current[0])
-				new_g = get_noized_color_value(color_current[1], col_var_bound, 0, colordelta_current[1])
-				new_b = get_noized_color_value(color_current[2], col_var_bound, 0, colordelta_current[2])
-				new_a = norm_value(get_noized_color_value(color_current[3], col_var_bound))
+				new_color = [0,0,0,0]
+				for c in range(4):
+					new_color[c] = get_new_color_value(color_current[c], color_vglobal[c], currentstatus[0], color_vray[c], i, color_vlocal[c], 0)
 
-				[nr, ng, nb] = norm_color(new_r, new_g, new_b)
+				[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
 
+				'''
 				new_dr = norm_value(get_noized_value(colordelta_current[0], color_delta_bound/2), -color_delta_bound, color_delta_bound)
 				new_dg = norm_value(get_noized_value(colordelta_current[1], color_delta_bound/2), -color_delta_bound, color_delta_bound)
 				new_db = norm_value(get_noized_value(colordelta_current[2], color_delta_bound/2), -color_delta_bound, color_delta_bound)
+				'''
 
 				s.append([
 						currentstatus[0]+1,
@@ -326,8 +366,8 @@ def printstar_nonrek_colorvariation(init_dict):
 						currentstatus[4],
 						currentstatus[5] + rayvariation[currentstatus[0]%number_of_rayvariations],
 						currentstatus[6] + widthvariation[currentstatus[0]%number_of_widthvariations],
-						[nr, ng, nb, new_a],
-						[new_dr, new_dg, new_db]
+						[nr, ng, nb, new_a]#,
+					#	[new_dr, new_dg, new_db]
 					])
 
 	print "iterations: " + str(iteration)
@@ -338,10 +378,10 @@ def printstar_nonrek_colorvariation(init_dict):
 		starname = "star_" + str(startrays) + "_" + str(rayvariation) + "_%.2f_" % startlength + str(lengthfactor) + "_" + str(startwidth) + "_" + str(widthvariation) + "_[%.2f, %.2f, %.2f, %.2f]_rand" % (col_start[0], col_start[1], col_start[2], col_start[3])
 		if not os.path.exists(dicname):
 			os.makedirs(dicname+"/")
-		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], 'white'):
+		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], background):
 			starname += "_"
 	else:
-		print_linecollection(segments, [xmin, xmax, ymin, ymax], 'black')
+		print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
 
 init = load_init('init_star')
 #print init
