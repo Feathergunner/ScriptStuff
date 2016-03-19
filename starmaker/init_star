@@ -1,0 +1,36 @@
+# the length of the rays in the first iteration:
+raylength_start = 100
+
+# the factor by which the lengths get modified in each step (shoul be within [0,1) )
+raylength_varfactor = 0.45
+# raylength_varfactor = (2/6.0)
+
+# the number of rays at the first iteration (int):
+raynumber_start = 8
+
+# the total variation of the number of rays per iteration (does not need to be integer):
+raynumber_variation = -1
+
+# the linewidth in first iteration:
+raywidth_start = 0.1
+
+# the variation of the linewidth per iteration:
+raywidth_variation = 0.2
+
+# a list with four elements defining the color of the zeroth iteration (r,g,b,a):
+color_r_start = 0.5
+color_g_start = 0.5
+color_b_start = 0.5
+color_a_start = 1.0
+
+# color variation per iteration, or bounds to the random color variation (depending on which method is used)
+# TO DO
+
+# set to true to activate an additional recursive star added at the center of each star:
+centerstar = True
+
+# the maximum number of iterations the algorithm computes before stopping:
+iterations = 50000
+
+# a bool describing if the output should be written to a file or shown (True = write to file):
+savetofile = True
