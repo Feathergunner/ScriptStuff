@@ -235,10 +235,6 @@ def printstar_nonrek_colorvariation(init_dict):
 	# local modifiing rules:	
 	vcolor_local 	= [init_dict['color_r_vlocal'], init_dict['color_g_vlocal'], init_dict['color_b_vlocal'], init_dict['color_a_vlocal']]
 
-	#print color_vglobal
-	#print color_vray
-	#print color_vlocal
-
 	# other parameters:
 	middlestar 		= init_dict['centerstar']
 	maxiter 		= init_dict['iterations']
@@ -279,10 +275,9 @@ def printstar_nonrek_colorvariation(init_dict):
 
 	iteration = 0
 
-	while len(s) > 0:
-		
-		currentstatus = s.pop()
-
+	while len(s) > 0:		
+		currentstatus = s.pop(0)
+			
 		iteration += 1
 		if iteration%10000 == 0:
 			print iteration
@@ -302,7 +297,7 @@ def printstar_nonrek_colorvariation(init_dict):
 			nextlength = currentstatus[3] * vlength_global[currentstatus[0]%num_vlg]
 			nextnumber = currentstatus[5] + vnumber_global[currentstatus[0]%num_vng]
 			nextwidth  = currentstatus[6] + vwidth_global[currentstatus[0]%num_vwg]
-
+			
 			for i in range(0, rays):
 				new_angle = currentstatus[4] + i*delta_angle
 				end_x = currentstatus[1] + math.cos(new_angle)*currentstatus[3]
@@ -321,7 +316,7 @@ def printstar_nonrek_colorvariation(init_dict):
 
 				lines.append([(currentstatus[1],currentstatus[2]), (end_x,end_y)])
 				linecolors.append((nr, ng, nb, new_color[3]))
-				linethicknesses.append(currentstatus[6])
+				linethicknesses.append(currentstatus[6])				
 
 				s.append([
 						currentstatus[0]+1,
