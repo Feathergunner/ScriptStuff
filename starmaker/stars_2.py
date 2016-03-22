@@ -155,14 +155,15 @@ def get_new_color_value(oldval, vglobal, depth, vray, raynumber, vlocal, mindelt
 	return norm_value(oldval + global_variation + ray_variation + random_variation)
 
 def write_linecollection_to_file(filename, collection, dimensions, background='white', dim_x = 3000, dim_y = 3000):
-	dpi_val = 300.0
+	dpi_val = 100.0
 	if not os.path.isfile(filename):
 		fig = plt.figure()
-		plt.axis('on')
+		plt.axis('off')
 		#ax = plt.axes()
 		ax = fig.gca()
 		ax.add_collection(collection)
 		ax.set_autoscale_on(False)
+		ax.set_aspect('equal')
 		ax.plot()
 		
 		ax.axis(dimensions)
