@@ -91,3 +91,7 @@ background = black
 
 # a bool describing if the output should be written to a file or shown (True = write to file):
 savetofile = True
+
+# dimensions of output-image in pixel:
+out_dim_x = 3000
+out_dim_y = 3000

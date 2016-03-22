@@ -52,6 +52,12 @@ def load_init(filename):
 		'a'
 	]
 
+	identifieres_single_float = [
+		'iterations',
+		'out_dim_x',
+		'out_dim_y'
+	]
+
 	identifieres_bool = [
 		'centerstar',
 		'savetofile'
@@ -67,7 +73,7 @@ def load_init(filename):
 			terms = re.split(r'\s*=\s*',line)
 			value = re.split(r'\s*',terms[1])[0]
 
-			if terms[0] == 'iterations':
+			if terms[0] in identifieres_single_float:
 				init[terms[0]] = float(value)
 
 			if terms[0] == 'background':
@@ -148,10 +154,11 @@ def get_new_color_value(oldval, vglobal, depth, vray, raynumber, vlocal, mindelt
 		random_variation *= -1
 	return norm_value(oldval + global_variation + ray_variation + random_variation)
 
-def write_linecollection_to_file(filename, collection, dimensions, background='white'):
+def write_linecollection_to_file(filename, collection, dimensions, background='white', dim_x = 3000, dim_y = 3000):
+	dpi_val = 300.0
 	if not os.path.isfile(filename):
 		fig = plt.figure()
-		plt.axis('off')
+		plt.axis('on')
 		#ax = plt.axes()
 		ax = fig.gca()
 		ax.add_collection(collection)
@@ -159,9 +166,9 @@ def write_linecollection_to_file(filename, collection, dimensions, background='w
 		ax.plot()
 		
 		ax.axis(dimensions)
-		fig.set_size_inches(10,10)
+		fig.set_size_inches(dim_x/dpi_val, dim_y/dpi_val)
 
-		plt.savefig(filename, dpi=300, facecolor=background)
+		plt.savefig(filename, dpi=dpi_val, facecolor=background)
 		plt.close()
 		return True
 	else:
@@ -386,12 +393,12 @@ def printstar_nonrek_colorvariation(init_dict):
 
 		if not os.path.exists(dicname):
 			os.makedirs(dicname+"/")
-		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], background):
+		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], background, init_dict['out_dim_x'], init_dict['out_dim_y']):
 			starname += "_"
 	else:
 		print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
 
-init = load_init('init_square')
+init = load_init('init_triangle_large')
 #print init
 
 printstar_nonrek_colorvariation(init)
