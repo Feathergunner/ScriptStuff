@@ -74,6 +74,9 @@ color_g_vlocal = 0.0
 color_b_vlocal = 0.0
 color_a_vlocal = 0
 
+# normalize colors (to increase contrast, but can distort color gradient)
+color_normalize = True
+
 ###########################################################################################
 # Additional parameters concerning the star:
 ###########################################################################################
@@ -84,7 +87,7 @@ centerstar = True
 # Parameters concerning the computation and output:
 ###########################################################################################
 # the maximum number of iterations the algorithm computes before stopping:
-iterations = 5000
+iterations = 50000
 
 # the background color:
 background = white

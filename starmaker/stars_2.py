@@ -8,6 +8,59 @@ from datetime import date, timedelta
 import random
 import re
 
+class OutputHandler:
+	filename = 'defaultfile'
+	background = 'white'
+	dpi_val = 100.0
+	dim_x = 3000
+	dim_y = 3000
+
+	dimensions = [-100,100,-100,100]
+
+	is_initialized = False
+
+	def set_filename(self, name):
+		self.filename = name
+
+	def set_dpi(self, dpi):
+		self.dpi_val = dpi
+
+	def set_img_size(self,x,y):
+		self.dim_x = x
+		self.dim_y = y
+
+		#self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
+
+	def set_dimensions(self,dim):
+		self.dimensions = dim
+
+	def set_background(self, bgcolor):
+		self.background = bgcolor
+
+	def init_output_to_file(self):
+		self.fig = plt.figure()
+		plt.axis('off')
+		self.ax = self.fig.gca()
+		self.ax.set_autoscale_on(False)
+		self.ax.set_aspect('equal')
+
+		self.is_initialized = True
+
+	def plt_collection(self, collection):
+		if self.is_initialized:
+			self.ax.add_collection(collection)
+			self.ax.plot()
+
+	def save_to_file(self):
+		if self.is_initialized:
+
+			self.ax.axis(self.dimensions)
+			self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
+		
+			plt.savefig(self.filename, dpi=self.dpi_val, facecolor=self.background)
+			plt.close()
+
+
 def parse_list(textarray):
 	content = re.split(r'[\[\]]',textarray)
 	if len(content) < 3:
@@ -60,7 +113,8 @@ def load_init(filename):
 
 	identifieres_bool = [
 		'centerstar',
-		'savetofile'
+		'savetofile',
+		'color_normalize'
 	]
 
 	bg_colors = [
@@ -155,6 +209,7 @@ def get_new_color_value(oldval, vglobal, depth, vray, raynumber, vlocal, mindelt
 	return norm_value(oldval + global_variation + ray_variation + random_variation)
 
 def write_linecollection_to_file(filename, collection, dimensions, background='white', dim_x = 3000, dim_y = 3000):
+	'''
 	dpi_val = 100.0
 	if not os.path.isfile(filename):
 		fig = plt.figure()
@@ -174,6 +229,25 @@ def write_linecollection_to_file(filename, collection, dimensions, background='w
 		return True
 	else:
 		return False
+	'''
+
+	if not os.path.isfile(filename):
+		oh = OutputHandler()
+
+		oh.init_output_to_file()
+		oh.set_filename(filename)
+		oh.set_background(background)
+
+		oh.plt_collection(collection)
+
+		oh.set_img_size(dim_x, dim_y)
+		oh.set_dimensions(dimensions)
+		oh.save_to_file()
+
+		return True
+	else:
+		return False
+	#'''
 
 def print_linecollection(collection, dimensions, background='white'):
 	fig = plt.figure(facecolor=background)
@@ -242,6 +316,9 @@ def printstar_nonrek_colorvariation(init_dict):
 
 	# local modifiing rules:	
 	vcolor_local 	= [init_dict['color_r_vlocal'], init_dict['color_g_vlocal'], init_dict['color_b_vlocal'], init_dict['color_a_vlocal']]
+
+	# color normalization:
+	opt_norm_color  = init_dict['color_normalize']
 
 	# other parameters:
 	middlestar 		= init_dict['centerstar']
@@ -320,7 +397,10 @@ def printstar_nonrek_colorvariation(init_dict):
 				for c in range(4):
 					new_color[c] = get_new_color_value(color_current[c], vcolor_global[c], currentstatus[0], vcolor_ray[c], i, vcolor_local[c], 0)
 
-				[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
+				if opt_norm_color:
+					[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
+				else:
+					[nr, ng, nb] = new_color[0:3]
 
 				lines.append([(currentstatus[1],currentstatus[2]), (end_x,end_y)])
 				linecolors.append((nr, ng, nb, new_color[3]))
@@ -343,7 +423,10 @@ def printstar_nonrek_colorvariation(init_dict):
 				for c in range(4):
 					new_color[c] = get_new_color_value(color_current[c], vcolor_global[c], currentstatus[0], vcolor_ray[c], i, vcolor_local[c], 0)
 
-				[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
+				if opt_norm_color:
+					[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
+				else:
+					[nr, ng, nb] = new_color[0:3]
 
 				s.append([
 						currentstatus[0]+1,
@@ -399,7 +482,7 @@ def printstar_nonrek_colorvariation(init_dict):
 	else:
 		print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
 
-init = load_init('init_triangle_large')
+init = load_init('init_square')
 #print init
 
 printstar_nonrek_colorvariation(init)

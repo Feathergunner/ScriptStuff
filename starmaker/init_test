@@ -10,9 +10,9 @@ raylength_start = 100
 
 # the factor by which the lengths get modified in each step (shoul be within [0,1) )
 # global:
-raylength_vglobal = [0.5]
+raylength_vglobal = [0.4]
 # global, by raynumber:
-raylength_vray = [1,0.95]
+raylength_vray = [1]
 # random local variation bounds:
 raylength_vlocal = 0
 
@@ -38,7 +38,7 @@ raywidth_start = 4
 
 # the variation of the linewidth per iteration:
 # global:
-raywidth_vglobal = [-0.8]
+raywidth_vglobal = [0]
 # global by raynumber:
 raywidth_vray = [0]
 # random local variation bounds:
@@ -64,14 +64,14 @@ color_g_vglobal = [0]
 color_b_vglobal = [0]
 color_a_vglobal = [0]
 # global, by ray:
-color_r_vray = [-0.2,0.3,0.1,0.1]
-color_g_vray = [0.3,0.1,-0.2,0.1]
-color_b_vray = [0.1,-0.2,0.3,0.1]
+color_r_vray = [0.2,0.1,0,0,0,0.1]
+color_g_vray = [0,0.1,0.2,0.1,0,0]
+color_b_vray = [0,0,0,0.1,0.2,0.1]
 color_a_vray = [0]
 # local random variation bound:
-color_r_vlocal = 0.0
-color_g_vlocal = 0.0
-color_b_vlocal = 0.0
+color_r_vlocal = 0.03
+color_g_vlocal = 0.03
+color_b_vlocal = 0.03
 color_a_vlocal = 0
 
 # normalize colors (to increase contrast, but can distort color gradient)
