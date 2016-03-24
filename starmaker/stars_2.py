@@ -7,6 +7,7 @@ import numpy as np
 from datetime import date, timedelta
 import random
 import re
+import json
 
 class OutputHandler:
 	dirname = 'defaultdir'
@@ -64,12 +65,13 @@ class OutputHandler:
 			self.ax.add_collection(collection)
 			self.ax.plot()
 			self.ax.axis(self.dimensions)
-			self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
 
 			self.is_plotted = True
 
 	def save_to_file(self):
-		if self.is_initialized and self.file_is_initialized and self.is_plotted:		
+		if self.is_initialized and self.file_is_initialized and self.is_plotted:
+			self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
+
 			plt.savefig(self.filepath, dpi=self.dpi_val, facecolor=self.background)
 			plt.close()
 
@@ -77,6 +79,21 @@ class OutputHandler:
 		if self.is_initialized and self.is_plotted:
 			plt.show()
 			plt.close()
+
+	def save_line_data(self, lines, linecolors, linethicknesses, index):
+		db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(index)
+		with open(db_filename, 'w') as outfile:
+			json.dump([lines, linecolors, linethicknesses], outfile)
+
+	def plt_collections_from_files(self, number_of_files):
+		for i in range(1,number_of_files+1):
+			db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(i)
+			if os.path.isfile(db_filename):
+				with open(db_filename) as dbfile:
+					data = json.load(dbfile)
+					segments = clt.LineCollection(data[0], colors=data[1], linewidths=data[2], antialiaseds=0)
+					self.plt_collection(segments)
+				os.remove(db_filename)
 
 def parse_list(textarray):
 	content = re.split(r'[\[\]]',textarray)
@@ -320,38 +337,42 @@ def printstar_nonrek_colorvariation(init_dict):
 	oh.init_output()
 
 	# create starname:
-	if save:
-		starname_1 = startrays+startlength+startwidth
+	starname_1 = startrays+startlength+startwidth
 		
-		max_length_global = max(num_vlg, num_vng, num_vwg)
-		starname_2 = [a+b+c for a,b,c in zip(
-			vlength_global+[0]*(max_length_global-num_vlg),
-			vnumber_global+[0]*(max_length_global-num_vng),
-			vwidth_global+[0]*(max_length_global-num_vwg))]
+	max_length_global = max(num_vlg, num_vng, num_vwg)
+	starname_2 = [a+b+c for a,b,c in zip(
+		vlength_global+[0]*(max_length_global-num_vlg),
+		vnumber_global+[0]*(max_length_global-num_vng),
+		vwidth_global+[0]*(max_length_global-num_vwg))
+	]
 
-		max_length_ray = max(num_vlr, num_vnr, num_vwr)
-		starname_3 = [a+b+c for a,b,c in zip(
-			vlength_ray+[0]*(max_length_ray-num_vlr),
-			vnumber_ray+[0]*(max_length_ray-num_vnr),
-			vwidth_ray+[0]*(max_length_ray-num_vwr))]
+	max_length_ray = max(num_vlr, num_vnr, num_vwr)
+	starname_3 = [a+b+c for a,b,c in zip(
+		vlength_ray+[0]*(max_length_ray-num_vlr),
+		vnumber_ray+[0]*(max_length_ray-num_vnr),
+		vwidth_ray+[0]*(max_length_ray-num_vwr))
+	]
 
-		starname_4 = [a+b+c+d for a,b,c,d in zip(
-			col_start,
-			vcolor_global[0],
-			vcolor_ray[0],
-			vcolor_local)]
+	starname_4 = [a+b+c+d for a,b,c,d in zip(
+		col_start,
+		vcolor_global[0],
+		vcolor_ray[0],
+		vcolor_local)
+	]
 
-		starname_5,k = re.sub(r'0*','',str(maxiter))
+	starname_5,k = re.sub(r'0*','',str(maxiter))
 
-		starname = "star_"+str(starname_1)+str(starname_2)+str(starname_3)+str(starname_4)+str(maxiter)
-		starname,k = re.subn(r'\.','',starname)
-		starname,k = re.subn(r'[,\[\]0\s]*','',starname)
+	starname = "star_"+str(starname_1)+str(starname_2)+str(starname_3)+str(starname_4)+str(maxiter)
+	starname,k = re.subn(r'\.','',starname)
+	starname,k = re.subn(r'[,\[\]0\s]*','',starname)
 
-		print "name of star : "+starname
+	print "name of star : "+starname
 
-		oh.init_outputfile(starname)
+	oh.init_outputfile(starname)
 
 	oh.set_background(background)
+
+	savestepsize = 5000
 
 	color_delta = 0.0
 	color_delta_bound = vcolor_local[0]/2
@@ -385,19 +406,19 @@ def printstar_nonrek_colorvariation(init_dict):
 	iteration = 0
 
 	while len(s) > 0:		
-		currentstatus = s.pop(0)
+		currentstatus = s.pop()
 			
 		iteration += 1
-		if iteration%1000 == 0:
+		if iteration%savestepsize == 0:
 			print iteration
 
-			#print "ploting lines so far..."
-			#segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
-			#oh.plt_collection(segments)
+			if len(lines)>0:
+				
+				oh.save_line_data(lines, linecolors, linethicknesses, iteration/savestepsize)
 
-			#lines = []
-			#linecolors = []
-			#linethicknesses = []
+				lines = []
+				linecolors = []
+				linethicknesses = []
 
 		if iteration > maxiter:
 			print "Maximum number of iterations reached. Stop."
@@ -474,22 +495,20 @@ def printstar_nonrek_colorvariation(init_dict):
 
 	print "iterations: " + str(iteration)
 
-	segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
 	oh.set_dimensions([xmin, xmax, ymin, ymax])
 
-	oh.plt_collection(segments)
+	oh.plt_collections_from_files(iteration/savestepsize)
+	if (len(lines)>0):
+		segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
+		oh.plt_collection(segments)
 
 	if save:
 		print "Creating output image..."
 		oh.set_img_size(init_dict['out_dim_x'], init_dict['out_dim_y'])
 		oh.save_to_file()
 
-		#write_linecollection_to_file(starname, segments, [xmin, xmax, ymin, ymax], background, init_dict['out_dim_x'], init_dict['out_dim_y'])
-
 	else:
 		oh.show_plot()
-
-		#print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
 
 init = load_init('init_test')
 
