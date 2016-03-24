@@ -20,14 +20,8 @@ class OutputHandler:
 	dimensions = [-100,100,-100,100]
 
 	is_initialized = False
-
-	def set_filename(self, name):
-		self.filename = name
-		self.filepath = self.dirname+"/"+self.filename+".png"
-
-		while os.path.isfile(self.filepath):
-			self.filename +="_"
-			self.filepath = self.dirname+"/"+self.filename+".png"
+	file_is_initialized = False
+	is_plotted = False
 
 	def set_dpi(self, dpi):
 		self.dpi_val = dpi
@@ -44,12 +38,22 @@ class OutputHandler:
 	def set_background(self, bgcolor):
 		self.background = bgcolor
 
-	def init_output_to_file(self):
+	def init_outputfile(self, name):
 		self.dirname = "stars_" + date.isoformat(date.today())
 		if not os.path.exists(self.dirname):
 			os.makedirs(self.dirname+"/")
 
-		self.fig = plt.figure()
+		self.filename = name
+		self.filepath = self.dirname+"/"+self.filename+".png"
+
+		while os.path.isfile(self.filepath):
+			self.filename +="_"
+			self.filepath = self.dirname+"/"+self.filename+".png"
+
+		self.file_is_initialized = True
+
+	def init_output(self):
+		self.fig = plt.figure(facecolor=self.background)
 		plt.axis('off')
 		self.ax = self.fig.gca()
 		self.ax.set_autoscale_on(False)
@@ -61,15 +65,26 @@ class OutputHandler:
 		if self.is_initialized:
 			self.ax.add_collection(collection)
 			self.ax.plot()
-
-	def save_to_file(self):
-		if self.is_initialized:
-
 			self.ax.axis(self.dimensions)
 			self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
-		
+
+			self.is_plotted = True
+
+	def save_to_file(self):
+		if self.is_initialized and self.file_is_initialized and self.is_plotted:		
 			plt.savefig(self.filepath, dpi=self.dpi_val, facecolor=self.background)
 			plt.close()
+
+	def show_plot(self):
+		if self.is_initialized and self.is_plotted:
+			plt.show()
+			plt.close()
+			#fig = plt.figure(facecolor=self.background)
+			#plt.axis('off')
+			#ax = plt.axes()
+			#ax.add_collection(collection)
+			#ax.set_autoscale_on(False)
+			#ax.plot()
 
 
 def parse_list(textarray):
@@ -220,47 +235,20 @@ def get_new_color_value(oldval, vglobal, depth, vray, raynumber, vlocal, mindelt
 	return norm_value(oldval + global_variation + ray_variation + random_variation)
 
 def write_linecollection_to_file(filename, collection, dimensions, background='white', dim_x = 3000, dim_y = 3000):
-	'''
-	dpi_val = 100.0
-	if not os.path.isfile(filename):
-		fig = plt.figure()
-		plt.axis('off')
-		#ax = plt.axes()
-		ax = fig.gca()
-		ax.add_collection(collection)
-		ax.set_autoscale_on(False)
-		ax.set_aspect('equal')
-		ax.plot()
-		
-		ax.axis(dimensions)
-		fig.set_size_inches(dim_x/dpi_val, dim_y/dpi_val)
+	oh = OutputHandler()
 
-		plt.savefig(filename, dpi=dpi_val, facecolor=background)
-		plt.close()
-		return True
-	else:
-		return False
-	'''
+	oh.init_output()
+	oh.init_outputfile(filename)
+	oh.set_background(background)
 
-	if not os.path.isfile(filename):
-		oh = OutputHandler()
+	oh.plt_collection(collection)
 
-		oh.init_output_to_file()
-		oh.set_filename(filename)
-		oh.set_background(background)
-
-		oh.plt_collection(collection)
-
-		oh.set_img_size(dim_x, dim_y)
-		oh.set_dimensions(dimensions)
-		oh.save_to_file()
-
-		return True
-	else:
-		return False
-	#'''
+	oh.set_img_size(dim_x, dim_y)
+	oh.set_dimensions(dimensions)
+	oh.save_to_file()
 
 def print_linecollection(collection, dimensions, background='white'):
+	'''
 	fig = plt.figure(facecolor=background)
 	plt.axis('off')
 	ax = plt.axes()
@@ -273,10 +261,19 @@ def print_linecollection(collection, dimensions, background='white'):
 
 	plt.show()
 	plt.close()
+	'''
+	oh = OutputHandler()
+
+	oh.set_background(background)
+	oh.init_output()
+	oh.plt_collection(collection)
+	oh.set_dimensions(dimensions)
+	oh.show_plot()
+
 
 
 ###################################################################
-# A function that creates star with QUADRATIC random colorvariation
+# A function that creates star as specified by the init_dict
 ###################################################################
 # startlength: 		inital length of rays
 # lengthfactor:		factor by which length of rays is shortenend in each iteration
@@ -313,7 +310,6 @@ def printstar_nonrek_colorvariation(init_dict):
 	vcolor_global 	= [init_dict['color_r_vglobal'], init_dict['color_g_vglobal'], init_dict['color_b_vglobal'], init_dict['color_a_vglobal']]
 
 	# global-by-ray modifiing rules:
-
 	vlength_ray 	= init_dict['raylength_vray']
 	num_vlr = len(vlength_ray)
 
