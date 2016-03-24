@@ -1,20 +1,24 @@
 #!usr/bin/python
 
-#import sys
 import os
-#import re
+import re
 from subprocess import call
 
 class calendar_constructor:
+	inputfilename = "data.txt"
+
 	year = 0
 	first_day_of_months = [0,0,0,0,0,0,0,0,0,0,0,0]
 	days_of_months = [31,28,31,30,31,30,31,31,30,31,30,31]
+
+	holiday = [[],[],[],[],[],[],[],[],[],[],[],[]]
+	public_holiday = [[],[],[],[],[],[],[],[],[],[],[],[]]
+	birthdays = [{},{},{},{},{},{},{},{},{},{},{},{}]
 
 	names_of_month_de = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 	names_of_days_de = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
 
 	year_is_initialized = False
-	input_is_initialized = False
 
 	scalefactor = 0.7
 	dx = 1
@@ -36,18 +40,18 @@ class calendar_constructor:
 			elif self.year%2000 == 0:
 				is_leap = 1
 
-		self.first_day_of_months[0] = (1+jzz + jhh - is_leap)%7
-		self.first_day_of_months[1] = (4+jzz + jhh - is_leap)%7
-		self.first_day_of_months[2] = (4+jzz + jhh)%7
-		self.first_day_of_months[3] = (7+jzz + jhh)%7
-		self.first_day_of_months[4] = (2+jzz + jhh)%7
-		self.first_day_of_months[5] = (5+jzz + jhh)%7
-		self.first_day_of_months[6] = (7+jzz + jhh)%7
-		self.first_day_of_months[7] = (3+jzz + jhh)%7
-		self.first_day_of_months[8] = (6+jzz + jhh)%7
-		self.first_day_of_months[9] = (1+jzz + jhh)%7
-		self.first_day_of_months[10] = (4+jzz + jhh)%7
-		self.first_day_of_months[11] = (6+jzz + jhh)%7
+		self.first_day_of_months[0] = (0+jzz + jhh - is_leap)%7
+		self.first_day_of_months[1] = (3+jzz + jhh - is_leap)%7
+		self.first_day_of_months[2] = (3+jzz + jhh)%7
+		self.first_day_of_months[3] = (6+jzz + jhh)%7
+		self.first_day_of_months[4] = (1+jzz + jhh)%7
+		self.first_day_of_months[5] = (4+jzz + jhh)%7
+		self.first_day_of_months[6] = (6+jzz + jhh)%7
+		self.first_day_of_months[7] = (2+jzz + jhh)%7
+		self.first_day_of_months[8] = (5+jzz + jhh)%7
+		self.first_day_of_months[9] = (0+jzz + jhh)%7
+		self.first_day_of_months[10] = (3+jzz + jhh)%7
+		self.first_day_of_months[11] = (5+jzz + jhh)%7
 
 		if is_leap > 0:
 			self.days_of_months[1] = 29
@@ -58,20 +62,76 @@ class calendar_constructor:
 		if not os.path.exists("tex"):
 			os.makedirs("tex/")
 
-		inputfilename = "data.txt"
-
-		if os.path.isfile(inputfilename):
-			this.inputfile = open(inputfilename)
-			self.input_is_initialized = True
-		else:
-			print "Error! No inputfile data.txt found!"
-
 		self.templatefile = open('calendar_template.tex')
 
 		self.outputfilename = "calendar_"+str(self.year)+".tex"
 		self.outputfile = open("tex/"+self.outputfilename, 'w')
 
+	def init_extern_data(self):
+		keywords = ['Holiday:Personal', 'Holiday:Public', 'Anniversary']
+
+		# mode defines which input is read:
+		# 0: undefined
+		# 1: holidays
+		# 2: public holidays
+		# 3: birthdays and anniversaries
+		current_mode = 0
+
+		current_month = 0
+
+		if os.path.isfile(self.inputfilename):
+			self.inputfile = open(self.inputfilename)
+			for line in self.inputfile:
+				if line[0] == '+':
+					words = re.split(r'\+',line)
+					key = re.sub('\s+','',words[1])
+					if key == keywords[0]:
+						current_mode = 1
+					elif key == keywords[1]:
+						current_mode = 2
+					elif key == keywords[2]:
+						current_mode = 3
+					else:
+						current_mode = 0
+						print "Error! Undefined mode: "+key
+
+				elif line[0] == 'm' or line[0] == 'M':
+					terms = re.split(r':', line)
+					value = int(re.sub('\s+','',terms[1]))
+					current_month = value
+
+				elif line[0] != '#' and line != '\n':
+					if current_month>0 and current_month <= 12:
+						terms = re.split(r':', line)
+						values = re.split(r'-', terms[0])
+
+						vals = []
+						if len(values)==1:
+							vals.append(int(re.sub('\s+','',values[0])))
+						else:
+							bound_l,k = re.subn('\s+','',values[0])
+							bound_u,k = re.subn('\s+','',values[1])
+
+							for i in range(int(bound_l), int(bound_u)+1):
+								vals.append(i)
+
+						if current_mode == 1:
+							self.holiday[current_month-1] += vals
+						elif current_mode == 2:
+							self.public_holiday[current_month-1] += vals
+						elif current_mode == 3:
+							for v in vals:
+								self.birthdays[current_month-1][v] = terms[1]
+					#else:
+					#	print "Error! Month not specified."
+
+		else:
+			print "Error! No inputfile data.txt found!"
+
+
 	def init_calendar(self):
+		self.init_extern_data()
+
 		linecounter = 0
 		for line in self.templatefile:
 			linecounter += 1
@@ -91,11 +151,20 @@ class calendar_constructor:
 			code_weekdays.append("\\node[anchor=east] at (-"+str(self.scalefactor)+","+str(start_y-self.scalefactor*day)+"){\\textbf{"+str(self.names_of_days_de[day][:2])+"}};\n")
 		return code_weekdays
 
-	def get_code_day(self, day, x, y):
+	def get_code_day(self, month, weekday, day, x, y):
 		scaled_x = self.scalefactor * x
 		scaled_y = self.scalefactor * y
 		circlesize = self.scalefactor*0.45
-		code = "\\draw ("+str(scaled_x)+","+str(scaled_y)+") circle ("+str(circlesize)+");\n"
+		fillcolor = ""
+
+		if day in self.holiday[month]:
+			fillcolor = "[fill=blue!30]"
+		if weekday > 4:
+			fillcolor = "[fill=gray!30]"
+		if day in self.public_holiday[month]:
+			fillcolor = "[fill=green!40]"
+
+		code = "\\draw"+fillcolor+" ("+str(scaled_x)+","+str(scaled_y)+") circle ("+str(circlesize)+");\n"
 		code += "\\draw ("+str(scaled_x)+","+str(scaled_y)+") node{"+str(day)+"};\n"
 		return code
 
@@ -110,9 +179,7 @@ class calendar_constructor:
 			day_x = pos_x + (weekday/7)*self.dx
 			day_y = pos_y + (6-(weekday%7))*self.dy
 
-			#print "day: " +str(i) + ", weekday: "+ str(weekday) + ", day_x/day_y: ("+str(day_x)+"/"+str(day_y)+")"
-
-			monthcode.append(self.get_code_day(day, day_x, day_y))
+			monthcode.append(self.get_code_day(month, weekday%7, day, day_x, day_y))
 
 		return monthcode
 

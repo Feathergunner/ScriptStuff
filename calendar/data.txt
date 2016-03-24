@@ -1,0 +1,67 @@
+# example data file:
+# usage:
+#
+# lines beginning with '#' are ignored by programm
+# lines beginning with '+' mark the beginning of one of three topics:
+#
+# +Holiday:Personal
+# +Holiday:Public
+# +Anniversary
+#
+# holidays induce a color-filled day (personal: blue, public: green)
+# anniversaries induce a mark at the specific date
+# anniversaries can be linked with a note (see below)
+# 
+# to specify dates, the month has to be given first:
+# lines beginning with 'm:' or 'M:' specify a month, which holds for all following dates untill another month is given. The month is specified by its number (1-12)
+# 
+# Example (sets month to april):
+# m: 4
+#
+# When a topic and a month is specified, dates can be given by simply writing the days of the month, one per line. Alternatively, a range of dates can be given by seperating first and last day with '-'.
+# Dates can have a comment within the same line, by adding ':' after the day (or days). For Anniversaries, these comments may appear on the calendar in a later version.
+#
+# Note: use only basic latin letters
+
++Holiday:Public
+m:1
+1: Neujahr
+m:3
+25: Karfreitag
+27: Ostersonntag
+28: Ostermontag
+m:5
+1: Tag der Arbeit
+5: Himmelfahrt
+16: Pfingsten
+m:10
+3: Tag der deutschen Einheit
+m:12
+25: Weihnachten
+26: Weihnachten
+
++Holiday:Personal
+m:2
+13-29
+m:3
+1-31
+m:4
+1-3
+m:7
+9-31
+m:8
+1-31
+m:9
+1-31
+m:10
+1-16
+m:12
+26-30
+
++Anniversary
+m:3
+15: John
+m:5
+3: Jack
+m:12
+4: Carl and 
