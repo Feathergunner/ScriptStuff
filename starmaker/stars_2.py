@@ -247,7 +247,11 @@ def print_linecollection(collection, dimensions, background='white'):
 	oh.set_dimensions(dimensions)
 	oh.show_plot()
 
+def create_starname(init_dict):
+	#TO DO
+	starname = 'default'
 
+	return starname
 
 ###################################################################
 # A function that creates star as specified by the init_dict
@@ -313,7 +317,41 @@ def printstar_nonrek_colorvariation(init_dict):
 	currentdate = date.today()
 
 	oh = OutputHandler()
-	#oh.
+	oh.init_output()
+
+	# create starname:
+	if save:
+		starname_1 = startrays+startlength+startwidth
+		
+		max_length_global = max(num_vlg, num_vng, num_vwg)
+		starname_2 = [a+b+c for a,b,c in zip(
+			vlength_global+[0]*(max_length_global-num_vlg),
+			vnumber_global+[0]*(max_length_global-num_vng),
+			vwidth_global+[0]*(max_length_global-num_vwg))]
+
+		max_length_ray = max(num_vlr, num_vnr, num_vwr)
+		starname_3 = [a+b+c for a,b,c in zip(
+			vlength_ray+[0]*(max_length_ray-num_vlr),
+			vnumber_ray+[0]*(max_length_ray-num_vnr),
+			vwidth_ray+[0]*(max_length_ray-num_vwr))]
+
+		starname_4 = [a+b+c+d for a,b,c,d in zip(
+			col_start,
+			vcolor_global[0],
+			vcolor_ray[0],
+			vcolor_local)]
+
+		starname_5,k = re.sub(r'0*','',str(maxiter))
+
+		starname = "star_"+str(starname_1)+str(starname_2)+str(starname_3)+str(starname_4)+str(maxiter)
+		starname,k = re.subn(r'\.','',starname)
+		starname,k = re.subn(r'[,\[\]0\s]*','',starname)
+
+		print "name of star : "+starname
+
+		oh.init_outputfile(starname)
+
+	oh.set_background(background)
 
 	color_delta = 0.0
 	color_delta_bound = vcolor_local[0]/2
@@ -350,8 +388,16 @@ def printstar_nonrek_colorvariation(init_dict):
 		currentstatus = s.pop(0)
 			
 		iteration += 1
-		if iteration%10000 == 0:
+		if iteration%1000 == 0:
 			print iteration
+
+			#print "ploting lines so far..."
+			#segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
+			#oh.plt_collection(segments)
+
+			#lines = []
+			#linecolors = []
+			#linethicknesses = []
 
 		if iteration > maxiter:
 			print "Maximum number of iterations reached. Stop."
@@ -429,42 +475,21 @@ def printstar_nonrek_colorvariation(init_dict):
 	print "iterations: " + str(iteration)
 
 	segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
-	
+	oh.set_dimensions([xmin, xmax, ymin, ymax])
+
+	oh.plt_collection(segments)
+
 	if save:
 		print "Creating output image..."
-		starname_1 = startrays+startlength+startwidth
-		
-		max_length_global = max(num_vlg, num_vng, num_vwg)
-		starname_2 = [a+b+c for a,b,c in zip(
-			vlength_global+[0]*(max_length_global-num_vlg),
-			vnumber_global+[0]*(max_length_global-num_vng),
-			vwidth_global+[0]*(max_length_global-num_vwg))]
+		oh.set_img_size(init_dict['out_dim_x'], init_dict['out_dim_y'])
+		oh.save_to_file()
 
-		max_length_ray = max(num_vlr, num_vnr, num_vwr)
-		starname_3 = [a+b+c for a,b,c in zip(
-			vlength_ray+[0]*(max_length_ray-num_vlr),
-			vnumber_ray+[0]*(max_length_ray-num_vnr),
-			vwidth_ray+[0]*(max_length_ray-num_vwr))]
-
-		starname_4 = [a+b+c+d for a,b,c,d in zip(
-			col_start,
-			vcolor_global[0],
-			vcolor_ray[0],
-			vcolor_local)]
-
-		starname_5,k = re.sub(r'0*','',str(maxiter))
-
-		starname = "star_"+str(starname_1)+str(starname_2)+str(starname_3)+str(starname_4)+str(maxiter)
-		starname,k = re.subn(r'\.','',starname)
-		starname,k = re.subn(r'[,\[\]0\s]*','',starname)
-		#starname,k = re.subn(r'\s*','',starname)
-
-		print "name of star : "+starname
-
-		write_linecollection_to_file(starname, segments, [xmin, xmax, ymin, ymax], background, init_dict['out_dim_x'], init_dict['out_dim_y'])
+		#write_linecollection_to_file(starname, segments, [xmin, xmax, ymin, ymax], background, init_dict['out_dim_x'], init_dict['out_dim_y'])
 
 	else:
-		print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
+		oh.show_plot()
+
+		#print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
 
 init = load_init('init_test')
 
