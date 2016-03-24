@@ -9,7 +9,9 @@ import random
 import re
 
 class OutputHandler:
+	dirname = 'defaultdir'
 	filename = 'defaultfile'
+	filepath = ''
 	background = 'white'
 	dpi_val = 100.0
 	dim_x = 3000
@@ -21,6 +23,11 @@ class OutputHandler:
 
 	def set_filename(self, name):
 		self.filename = name
+		self.filepath = self.dirname+"/"+self.filename+".png"
+
+		while os.path.isfile(self.filepath):
+			self.filename +="_"
+			self.filepath = self.dirname+"/"+self.filename+".png"
 
 	def set_dpi(self, dpi):
 		self.dpi_val = dpi
@@ -38,6 +45,10 @@ class OutputHandler:
 		self.background = bgcolor
 
 	def init_output_to_file(self):
+		self.dirname = "stars_" + date.isoformat(date.today())
+		if not os.path.exists(self.dirname):
+			os.makedirs(self.dirname+"/")
+
 		self.fig = plt.figure()
 		plt.axis('off')
 		self.ax = self.fig.gca()
@@ -57,7 +68,7 @@ class OutputHandler:
 			self.ax.axis(self.dimensions)
 			self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
 		
-			plt.savefig(self.filename, dpi=self.dpi_val, facecolor=self.background)
+			plt.savefig(self.filepath, dpi=self.dpi_val, facecolor=self.background)
 			plt.close()
 
 
@@ -327,7 +338,9 @@ def printstar_nonrek_colorvariation(init_dict):
 	background		= init_dict['background']
 
 	currentdate = date.today()
-	dicname = "stars_" + date.isoformat(currentdate)
+
+	oh = OutputHandler()
+	#oh.
 
 	color_delta = 0.0
 	color_delta_bound = vcolor_local[0]/2
@@ -473,16 +486,14 @@ def printstar_nonrek_colorvariation(init_dict):
 		starname,k = re.subn(r'[,\[\]0\s]*','',starname)
 		#starname,k = re.subn(r'\s*','',starname)
 
-		print "filename : "+starname+".png"
+		print "name of star : "+starname
 
-		if not os.path.exists(dicname):
-			os.makedirs(dicname+"/")
-		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], background, init_dict['out_dim_x'], init_dict['out_dim_y']):
-			starname += "_"
+		write_linecollection_to_file(starname, segments, [xmin, xmax, ymin, ymax], background, init_dict['out_dim_x'], init_dict['out_dim_y'])
+
 	else:
 		print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
 
-init = load_init('init_square')
+init = load_init('init_test')
 #print init
 
 printstar_nonrek_colorvariation(init)
