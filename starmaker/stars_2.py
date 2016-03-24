@@ -30,8 +30,6 @@ class OutputHandler:
 		self.dim_x = x
 		self.dim_y = y
 
-		#self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
-
 	def set_dimensions(self,dim):
 		self.dimensions = dim
 
@@ -79,13 +77,6 @@ class OutputHandler:
 		if self.is_initialized and self.is_plotted:
 			plt.show()
 			plt.close()
-			#fig = plt.figure(facecolor=self.background)
-			#plt.axis('off')
-			#ax = plt.axes()
-			#ax.add_collection(collection)
-			#ax.set_autoscale_on(False)
-			#ax.plot()
-
 
 def parse_list(textarray):
 	content = re.split(r'[\[\]]',textarray)
@@ -248,20 +239,6 @@ def write_linecollection_to_file(filename, collection, dimensions, background='w
 	oh.save_to_file()
 
 def print_linecollection(collection, dimensions, background='white'):
-	'''
-	fig = plt.figure(facecolor=background)
-	plt.axis('off')
-	ax = plt.axes()
-	ax.add_collection(collection)
-	ax.set_autoscale_on(False)
-	ax.plot()
-
-	ax.axis(dimensions)
-	fig.set_size_inches(8,8)
-
-	plt.show()
-	plt.close()
-	'''
 	oh = OutputHandler()
 
 	oh.set_background(background)
@@ -490,6 +467,5 @@ def printstar_nonrek_colorvariation(init_dict):
 		print_linecollection(segments, [xmin, xmax, ymin, ymax], background)
 
 init = load_init('init_test')
-#print init
 
 printstar_nonrek_colorvariation(init)
