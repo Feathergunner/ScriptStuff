@@ -10,7 +10,7 @@ raylength_start = 100
 
 # the factor by which the lengths get modified in each step (shoul be within [0,1) )
 # global:
-raylength_vglobal = [0.4]
+raylength_vglobal = [0.5]
 # global, by raynumber:
 raylength_vray = [1]
 # random local variation bounds:
@@ -20,7 +20,7 @@ raylength_vlocal = 0
 # Parameters describing the number of rays:
 ###########################################################################################
 # the number of rays at the first iteration (int):
-raynumber_start = 4
+raynumber_start = 3
 
 # the total variation of the number of rays per iteration (does not need to be integer):
 # global:
@@ -34,11 +34,11 @@ raynumber_vlocal = 0
 # Parameters describing the width of rays
 ###########################################################################################
 # the linewidth in first iteration:
-raywidth_start = 4
+raywidth_start = 1
 
 # the variation of the linewidth per iteration:
 # global:
-raywidth_vglobal = [0]
+raywidth_vglobal = [-0.2]
 # global by raynumber:
 raywidth_vray = [0]
 # random local variation bounds:
@@ -64,9 +64,9 @@ color_g_vglobal = [0]
 color_b_vglobal = [0]
 color_a_vglobal = [0]
 # global, by ray:
-color_r_vray = [0.2,0.1,0,0,0,0.1]
-color_g_vray = [0,0.1,0.2,0.1,0,0]
-color_b_vray = [0,0,0,0.1,0.2,0.1]
+color_r_vray = [0.15,0,0]
+color_g_vray = [0,0.15,0]
+color_b_vray = [0,0,0.15]
 color_a_vray = [0]
 # local random variation bound:
 color_r_vlocal = 0.03
@@ -81,20 +81,22 @@ color_normalize = False
 # Additional parameters concerning the star:
 ###########################################################################################
 # set to true to activate an additional recursive star added at the center of each star:
-centerstar = False
+centerstar = True
 
 ###########################################################################################
 # Parameters concerning the computation and output:
 ###########################################################################################
 # the maximum number of iterations the algorithm computes before stopping:
-iterations = 50000
+iterations = 100000
 
-# the background color:
+# the background color (white / black):
 background = black
 
-# a bool describing if the output should be written to a file or shown (True = write to file):
+# a bool describing if the output should be written to a file or shown:
+# True = write to file
+# False = only show plot
 savetofile = True
 
 # dimensions of output-image in pixel:
-out_dim_x = 3000
-out_dim_y = 3000
+out_dim_x = 2000
+out_dim_y = 2000
