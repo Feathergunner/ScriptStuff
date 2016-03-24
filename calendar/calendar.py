@@ -166,6 +166,10 @@ class calendar_constructor:
 
 		code = "\\draw"+fillcolor+" ("+str(scaled_x)+","+str(scaled_y)+") circle ("+str(circlesize)+");\n"
 		code += "\\draw ("+str(scaled_x)+","+str(scaled_y)+") node{"+str(day)+"};\n"
+
+		if day in self.birthdays[month]:
+			code += "\\draw[orange, very thick] ("+str(scaled_x)+","+str(scaled_y)+") circle ("+str(self.scalefactor*0.35)+");"
+
 		return code
 
 	def construct_month(self, month, pos_x, pos_y):
