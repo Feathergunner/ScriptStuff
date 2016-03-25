@@ -13,7 +13,8 @@ class calendar_constructor:
 
 	holiday = [[],[],[],[],[],[],[],[],[],[],[],[]]
 	public_holiday = [[],[],[],[],[],[],[],[],[],[],[],[]]
-	birthdays = [{},{},{},{},{},{},{},{},{},{},{},{}]
+	birthdays = [[],[],[],[],[],[],[],[],[],[],[],[]]
+	birthdays_days = [[],[],[],[],[],[],[],[],[],[],[],[]]
 
 	names_of_month_de = ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 	names_of_days_de = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
@@ -121,9 +122,12 @@ class calendar_constructor:
 							self.public_holiday[current_month-1] += vals
 						elif current_mode == 3:
 							for v in vals:
-								self.birthdays[current_month-1][v] = terms[1]
+								self.birthdays[current_month-1].append([v,terms[1]])
 					#else:
 					#	print "Error! Month not specified."
+			self.inputfile.close()
+			for m in range(12):
+				self.birthdays_days[m] = [d for [d,n] in self.birthdays[m]]
 
 		else:
 			print "Error! No inputfile data.txt found!"
@@ -157,6 +161,8 @@ class calendar_constructor:
 		circlesize = self.scalefactor*0.45
 		fillcolor = ""
 
+		#birthdays = [d for [d,tag] in self.birthdays[month]]
+
 		if day in self.holiday[month]:
 			fillcolor = "[fill=blue!30]"
 		if weekday > 4:
@@ -167,10 +173,24 @@ class calendar_constructor:
 		code = "\\draw"+fillcolor+" ("+str(scaled_x)+","+str(scaled_y)+") circle ("+str(circlesize)+");\n"
 		code += "\\draw ("+str(scaled_x)+","+str(scaled_y)+") node{"+str(day)+"};\n"
 
-		if day in self.birthdays[month]:
+		if day in self.birthdays_days[month]:
 			code += "\\draw[orange, very thick] ("+str(scaled_x)+","+str(scaled_y)+") circle ("+str(self.scalefactor*0.35)+");"
 
 		return code
+
+	def get_code_annotations(self, x):
+		position = 0
+		annot_code = []
+		for month in range(12):
+			for b in sorted(self.birthdays[month], key=lambda x:x[0]):
+				caption = '{:>2n}.{:<2n}{:s}'.format(b[0], month+1, b[1])
+				forced_space_caption = re.sub(' ','\ ',caption)
+				code = "\\node[align=left, anchor=west] at ("+str(self.scalefactor*x)+","+str(self.scalefactor*(32-position))+") {\\small "+forced_space_caption+"};\n"
+				
+				annot_code.append(code)
+				position += 1
+		return annot_code
+
 
 	def construct_month(self, month, pos_x, pos_y):
 		monthcode = []
@@ -194,6 +214,7 @@ class calendar_constructor:
 		self.init_calendar()
 
 		calendar_code = []
+		max_month_x = 0
 
 		for row in range(4):
 			pos_y = 25.5-row * 8.5
@@ -204,7 +225,10 @@ class calendar_constructor:
 			for column in range(3):
 				month = row*3+column
 				calendar_code.append(self.construct_month(month, pos_x, pos_y))
-				pos_x += (self.first_day_of_months[month]+self.days_of_months[month])/7+2
+				pos_x += (self.first_day_of_months[month]+self.days_of_months[month])/7+1.5
+				max_month_x = max(max_month_x, pos_x)
+
+		calendar_code.append(self.get_code_annotations(max_month_x))
 
 		for m in calendar_code:
 			for l in m:
@@ -223,4 +247,3 @@ class calendar_constructor:
 
 cc = calendar_constructor()
 cc.print_calendar(2016)
-
