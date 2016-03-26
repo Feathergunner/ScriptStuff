@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import random
 import re
 import json
+import sys
 
 class OutputHandler:
 	dirname = 'defaultdir'
@@ -509,6 +510,11 @@ def printstar_nonrek_colorvariation(init_dict):
 	else:
 		oh.show_plot()
 
-init = load_init('init_test')
+if len(sys.argv)>1:
+	init_file = sys.argv[1]
+else:
+	init_file = 'init_test'
+
+init = load_init(init_file)
 
 printstar_nonrek_colorvariation(init)
