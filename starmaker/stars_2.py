@@ -334,6 +334,7 @@ def printstar_nonrek_colorvariation(init_dict):
 	currentdate = date.today()
 
 	oh = OutputHandler()
+	oh.set_background(background)
 	oh.init_output()
 
 	# create starname:
@@ -369,8 +370,6 @@ def printstar_nonrek_colorvariation(init_dict):
 	print "name of star : "+starname
 
 	oh.init_outputfile(starname)
-
-	oh.set_background(background)
 
 	savestepsize = 5000
 
