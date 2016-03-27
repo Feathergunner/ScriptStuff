@@ -1,0 +1,102 @@
+###########################################################################################
+# 
+###########################################################################################
+
+###########################################################################################
+# Parameters describing the length of rays:
+###########################################################################################
+# the length of the rays in the first iteration:
+raylength_start = 50
+
+# the factor by which the lengths get modified in each step (shoul be within [0,1) )
+# global:
+raylength_vglobal = [0.6]
+# global, by raynumber:
+raylength_vray = [1]
+# random local variation bounds:
+raylength_vlocal = 0
+
+###########################################################################################
+# Parameters describing the number of rays:
+###########################################################################################
+# the number of rays at the first iteration (int):
+raynumber_start = 3
+
+# the total variation of the number of rays per iteration (does not need to be integer):
+# global:
+raynumber_vglobal = [0]
+# gloabl, by raynumber:
+raynumber_vray = [0]
+# random local variation bounds:
+raynumber_vlocal = 0
+
+###########################################################################################
+# Parameters describing the width of rays
+###########################################################################################
+# the linewidth in first iteration:
+raywidth_start = 1
+
+# the variation of the linewidth per iteration:
+# global:
+raywidth_vglobal = [0]
+# global by raynumber:
+raywidth_vray = [0]
+# random local variation bounds:
+raywidth_vlocal = 0
+# minimum raywidth, lines will not be smaller:
+raywidth_minimum = 0.1
+# maximum raywidth:
+raywidth_maximum = 5
+
+###########################################################################################
+# Parameters describing the color of rays:
+###########################################################################################
+# a list with four elements defining the color of the zeroth iteration (r,g,b,a):
+color_r_start = 0.3
+color_g_start = 0
+color_b_start = 0
+color_a_start = 0.5
+
+# color variation:
+# global:
+color_r_vglobal = [0]
+color_g_vglobal = [0]
+color_b_vglobal = [0]
+color_a_vglobal = [0]
+# global, by ray:
+color_r_vray = [0.25,-0.1,-0.1]
+color_g_vray = [-0.03,-0.03,0.05]
+color_b_vray = [-0.1,-0.1,0.15]
+color_a_vray = [0.1]
+# local random variation bound:
+color_r_vlocal = 0.03
+color_g_vlocal = 0.03
+color_b_vlocal = 0.03
+color_a_vlocal = 0
+
+# normalize colors (to increase contrast, but can distort color gradient)
+color_normalize = False
+
+###########################################################################################
+# Additional parameters concerning the star:
+###########################################################################################
+# set to true to activate an additional recursive star added at the center of each star:
+centerstar = True
+
+###########################################################################################
+# Parameters concerning the computation and output:
+###########################################################################################
+# the maximum number of iterations the algorithm computes before stopping:
+iterations = 300000
+
+# the background color (white / black):
+background = black
+
+# a bool describing if the output should be written to a file or shown:
+# True = write to file
+# False = only show plot
+savetofile = True
+
+# dimensions of output-image in pixel:
+out_dim_x = 3000
+out_dim_y = 3000

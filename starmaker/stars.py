@@ -6,6 +6,190 @@ import os.path
 import numpy as np
 from datetime import date, timedelta
 import random
+import re
+import json
+import sys
+
+class OutputHandler:
+	dirname = 'defaultdir'
+	filename = 'defaultfile'
+	filepath = ''
+	background = 'white'
+	dpi_val = 100.0
+	dim_x = 3000
+	dim_y = 3000
+
+	dimensions = [-100,100,-100,100]
+
+	is_initialized = False
+	file_is_initialized = False
+	is_plotted = False
+
+	def set_dpi(self, dpi):
+		self.dpi_val = dpi
+
+	def set_img_size(self,x,y):
+		self.dim_x = x
+		self.dim_y = y
+
+	def set_dimensions(self,dim):
+		self.dimensions = dim
+
+	def set_background(self, bgcolor):
+		self.background = bgcolor
+
+	def init_outputfile(self, name):
+		self.dirname = "stars_" + date.isoformat(date.today())
+		if not os.path.exists(self.dirname):
+			os.makedirs(self.dirname+"/")
+
+		self.filename = name
+		self.filepath = self.dirname+"/"+self.filename+".png"
+
+		while os.path.isfile(self.filepath):
+			self.filename +="_"
+			self.filepath = self.dirname+"/"+self.filename+".png"
+
+		self.file_is_initialized = True
+
+	def init_output(self):
+		self.fig = plt.figure(facecolor=self.background)
+		plt.axis('off')
+		self.ax = self.fig.gca()
+		self.ax.set_autoscale_on(False)
+		self.ax.set_aspect('equal')
+
+		self.is_initialized = True
+
+	def plt_collection(self, collection):
+		if self.is_initialized:
+			self.ax.add_collection(collection)
+			self.ax.plot()
+			self.ax.axis(self.dimensions)
+
+			self.is_plotted = True
+
+	def save_to_file(self):
+		if self.is_initialized and self.file_is_initialized and self.is_plotted:
+			self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
+
+			plt.savefig(self.filepath, dpi=self.dpi_val, facecolor=self.background)
+			plt.close()
+
+	def show_plot(self):
+		if self.is_initialized and self.is_plotted:
+			plt.show()
+			plt.close()
+
+	def save_line_data(self, lines, linecolors, linethicknesses, index):
+		db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(index)
+		with open(db_filename, 'w') as outfile:
+			json.dump([lines, linecolors, linethicknesses], outfile)
+
+	def plt_collections_from_files(self, number_of_files):
+		for i in range(1,number_of_files+1):
+			db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(i)
+			if os.path.isfile(db_filename):
+				with open(db_filename) as dbfile:
+					data = json.load(dbfile)
+					segments = clt.LineCollection(data[0], colors=data[1], linewidths=data[2], antialiaseds=0)
+					self.plt_collection(segments)
+				os.remove(db_filename)
+
+def parse_list(textarray):
+	content = re.split(r'[\[\]]',textarray)
+	if len(content) < 3:
+		print 'Error! Wrong format in init file: '+textarray
+		print 'Note: should be a list ['+textarray+']'
+		return
+	
+	values = re.split(r'\s*,\s*',content[1])
+	if len(values) == 1 and len(values[0]) == 0:
+		return [0.0]
+	else:
+		return [float(v) for v in values]
+
+def parse_bool(textbool):
+	if textbool == 'True' or textbool == 'true' or textbool == '1':
+		return True
+	else:
+		return False
+
+def load_init(filename):
+	initfile = open(filename)
+	init={}
+
+	options1 = [
+		'raynumber',
+		'raylength',
+		'raywidth'
+	]
+	options2_float = [
+		'start',
+		'vlocal'
+	]
+	options2_list = [
+		'vglobal',
+		'vray'
+	]
+
+	options_color = [
+		'r',
+		'g',
+		'b',
+		'a'
+	]
+
+	identifieres_single_float = [
+		'iterations',
+		'out_dim_x',
+		'out_dim_y'
+	]
+
+	identifieres_bool = [
+		'centerstar',
+		'savetofile',
+		'color_normalize'
+	]
+
+	bg_colors = [
+		'black',
+		'white'
+	]
+
+	for line in initfile:
+		if line[0] != '#' and len(line) > 1:
+			terms = re.split(r'\s*=\s*',line)
+			value = re.split(r'\s*',terms[1])[0]
+
+			if terms[0] in identifieres_single_float:
+				init[terms[0]] = float(value)
+
+			if terms[0] == 'background':
+				if value in bg_colors:
+					init[terms[0]] = value
+				else:
+					print "Error: unidentified background color: "+value
+
+			if terms[0] in identifieres_bool:
+				init[terms[0]] = parse_bool(value)
+			else:
+				ident = re.split(r'_',terms[0])
+				#print ident
+
+				if ident[0] in options1:
+					if ident[1] in options2_float:
+						init[terms[0]] = float(value)
+					elif ident[1] in options2_list:
+						init[terms[0]] = parse_list(terms[1])
+				elif ident[0] == 'color':
+					if ident[1] in options_color:
+						if ident[2] in options2_float:
+							init[terms[0]] = float(value)
+						elif ident[2] in options2_list:
+							init[terms[0]] = parse_list(terms[1])
+
+	return init
 
 def get_noized_color(color, maxdelta, mindelta=0.0):
 	for i in range(0,3):
@@ -27,9 +211,14 @@ def norm_color(r,g,b):
 	if l<0:
 		l=0
 	d = u-l
-	r_new = (r-l)/d
-	g_new = (g-l)/d
-	b_new = (b-l)/d
+	if d != 0:
+		r_new = (r-l)/d
+		g_new = (g-l)/d
+		b_new = (b-l)/d
+	else:
+		r_new = r
+		g_new = g
+		b_new = b
 	if r_new>1:
 		r_new = 1
 	if g_new>1:
@@ -46,284 +235,44 @@ def norm_value(value, bound_l=0.0, bound_u=1.0):
 		return bound_u
 	return value
 
-def write_linecollection_to_file(filename, collection, dimensions, background='white'):
-	if not os.path.isfile(filename):
-		fig = plt.figure()
-		plt.axis('off')
-		#ax = plt.axes()
-		ax = fig.gca()
-		ax.add_collection(collection)
-		ax.set_autoscale_on(False)
-		ax.plot()
-		
-		ax.axis(dimensions)
-		fig.set_size_inches(10,10)
+def get_new_color_value(oldval, vglobal, depth, vray, raynumber, vlocal, mindelta=0.0):
+	global_variation = vglobal[depth%len(vglobal)]
+	ray_variation = vray[raynumber%len(vray)]
+	random_variation = np.random.uniform(mindelta, vlocal)
+	if random.randrange(0,10) > 5:
+		random_variation *= -1
+	return norm_value(oldval + global_variation + ray_variation + random_variation)
 
-		plt.savefig(filename, dpi=300, facecolor=background)
-		plt.close()
-		return True
-	else:
-		return False
+def write_linecollection_to_file(filename, collection, dimensions, background='white', dim_x = 3000, dim_y = 3000):
+	oh = OutputHandler()
+
+	oh.init_output()
+	oh.init_outputfile(filename)
+	oh.set_background(background)
+
+	oh.plt_collection(collection)
+
+	oh.set_img_size(dim_x, dim_y)
+	oh.set_dimensions(dimensions)
+	oh.save_to_file()
 
 def print_linecollection(collection, dimensions, background='white'):
-	fig = plt.figure(facecolor=background)
-	plt.axis('off')
-	ax = plt.axes()
-	ax.add_collection(collection)
-	ax.set_autoscale_on(False)
-	ax.plot()
+	oh = OutputHandler()
 
-	ax.axis(dimensions)
-	fig.set_size_inches(8,8)
+	oh.set_background(background)
+	oh.init_output()
+	oh.plt_collection(collection)
+	oh.set_dimensions(dimensions)
+	oh.show_plot()
 
-	plt.show()
-	plt.close()
+def create_starname(init_dict):
+	#TO DO
+	starname = 'default'
 
-###################################################################
-# A function that creates star with user-defined colorvariation
-###################################################################
-def printstar_nonrek_variable(startlength, lengthfactor, startrays, rayvariation, startwidth, widthvariation, col_start, col_var, save):
-	currentdate = date.today()
-	dicname = "stars4_" + date.isoformat(currentdate)
-	maxiter = 500000
-
-	print ("startlength    : %.2f" % startlength)
-	print ("lengthfactor   : %.2f" % lengthfactor)
-	print ("startrays      : %.2f" % startrays)
-	print ("rayvariation   : %.2f" % rayvariation)
-	print ("startwidth     : %.2f" % startwidth)
-	print ("widthvariation : %.2f" % widthvariation)
-	print ("col_start      : [%.2f, %.2f, %.2f, %.2f]" % (col_start[0], col_start[1], col_start[2], col_start[3]))
-	print ("col_var        : [%.2f, %.2f, %.2f, %.2f]" % (col_var[0], col_var[1], col_var[2], col_var[3]))
-	s = []
-
-	# initialization:
-	lines = []
-	linecolors = []
-	linethicknesses = []
-
-	xmin = 0
-	xmax = 0
-	ymin = 0
-	ymax = 0
-
-	# format of status:
-	# [
-	# 0:  start_x,
-	# 1:  start_y,
-	# 2:  length,
-	# 3:  angle,
-	# 4:  number_of_rays,
-	# 5:  lengthfactor (factor by with length of rays is manipulated in each iteration,
-	# 6:  linewidth,
-	# 7:  color: red,
-	# 8:  color: green,
-	# 9:  color: blue,
-	# 10: color: alpha
-	# ]
-
-	# initial status:
-	status = [0.0,0.0, startlength, (1.5+(1.0/startrays))*math.pi, startrays, lengthfactor, startwidth, col_start[0], col_start[1], col_start[2], col_start[3]]
-	s.append(status)
-
-	iteration = 0
-
-	while len(s) > 0:
-		iteration += 1
-
-		if iteration%10000 == 0:
-			print iteration
-
-		if iteration > maxiter:
-			print "Too big"
-			break
-		
-		currentstatus = s.pop()
-
-		rays = int(currentstatus[4])
-
-		if currentstatus[2] >= 1 and currentstatus[4] >= 1 and currentstatus[4] <=8:
-
-			delta_angle = 2*math.pi/rays
-
-			for i in range(0, rays):
-				new_angle = currentstatus[3] + i*delta_angle
-				end_x = currentstatus[0] + math.cos(new_angle)*currentstatus[2]
-				end_y = currentstatus[1] - math.sin(new_angle)*currentstatus[2]
-
-				xmin = min(xmin, end_x)
-				xmax = max(xmax, end_x)
-				ymin = min(ymin, end_y)
-				ymax = max(ymax, end_y)
-
-				lines.append([(currentstatus[0],currentstatus[1]), (end_x,end_y)])
-				linecolors.append((currentstatus[7], currentstatus[8], currentstatus[9], currentstatus[10]))
-				linethicknesses.append(currentstatus[6])
-
-				s.append([
-						end_x,
-						end_y,
-						currentstatus[2]*currentstatus[5],
-						new_angle,
-						currentstatus[4] + rayvariation,
-						currentstatus[5],
-						currentstatus[6] + widthvariation,
-						get_new_color_value(currentstatus[7], col_var[0]),
-						get_new_color_value(currentstatus[8], col_var[1]),
-						get_new_color_value(currentstatus[9], col_var[2]),
-						get_new_color_value(currentstatus[10], col_var[3])
-					])
-
-	segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
-	
-	if save:
-		starname = "star_" + str(startrays) + "_" + str(rayvariation) + "_%.2f_" % startlength + str(lengthfactor) + "_" + str(startwidth) + "_" + str(widthvariation) + "_[%.2f, %.2f, %.2f, %.2f]_[%.2f, %.2f, %.2f, %.2f]" % (col_start[0], col_start[1], col_start[2], col_start[3], col_var[0], col_var[1], col_var[2], col_var[3])
-		if not os.path.exists(dicname):
-			os.makedirs(dicname+"/")
-		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], 'black'):
-			starname += "_"
-	else:
-		print_linecollection(segments, [xmin, xmax, ymin, ymax], 'black')
-
+	return starname
 
 ###################################################################
-# A function that creates star with random colorvariation
-###################################################################
-def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvariation, startwidth, widthvariation, col_start, col_var_bounds, save, middlestar=False):
-	currentdate = date.today()
-	dicname = "stars_" + date.isoformat(currentdate)
-	maxiter = 500000
-
-	#col_variation = 0.08
-	#alpha_variation = -0.05
-
-	print ("startlength    : %.2f" % startlength)
-	print ("lengthfactor   : %.2f" % lengthfactor)
-	print ("startrays      : %.2f" % startrays)
-	print ("rayvariation   : %.2f" % rayvariation)
-	print ("startwidth     : %.2f" % startwidth)
-	print ("widthvariation : %.2f" % widthvariation)
-	print ("col_start      : [%.2f, %.2f, %.2f, %.2f]" % (col_start[0], col_start[1], col_start[2], col_start[3]))
-
-	s = []
-
-	lines = []
-	linecolors = []
-	linethicknesses = []
-
-	xmin = 0
-	xmax = 0
-	ymin = 0
-	ymax = 0
-
-	# format of status:
-	# [
-	# 0:  start_x,
-	# 1:  start_y,
-	# 2:  length,
-	# 3:  angle,
-	# 4:  number_of_rays,
-	# 5:  lengthfactor,
-	# 6:  linewidth,
-	# 7:  color_r,
-	# 8:  color_g,
-	# 9:  color_b,
-	# 10: color_a
-	# ]
-	status = [0.0,0.0, startlength, (1.5+(1.0/startrays))*math.pi, startrays, lengthfactor, startwidth, col_start[0], col_start[1], col_start[2], col_start[3]]
-	s.append(status)
-
-	iteration = 0
-
-	while len(s) > 0:
-		
-		currentstatus = s.pop()
-
-		iteration += 1
-		if iteration%10000 == 0:
-			print iteration
-
-		if iteration > maxiter:
-			print "Too big"
-			break
-
-		rays = int(currentstatus[4])
-
-		if currentstatus[2] >= 1 and currentstatus[4] >= 1 and currentstatus[4] <=10:
-
-			delta_angle = 2*math.pi/rays
-
-			for i in range(0, rays):
-				new_angle = currentstatus[3] + i*delta_angle
-				end_x = currentstatus[0] + math.cos(new_angle)*currentstatus[2]
-				end_y = currentstatus[1] - math.sin(new_angle)*currentstatus[2]
-
-				xmin = min(xmin, end_x)
-				xmax = max(xmax, end_x)
-				ymin = min(ymin, end_y)
-				ymax = max(ymax, end_y)
-
-
-
-
-				new_r = get_noized_color_val(currentstatus[7], col_var_bounds[0], col_var_bounds[0]/2)
-				new_g = get_noized_color_val(currentstatus[8], col_var_bounds[1], col_var_bounds[1]/2)
-				new_b = get_noized_color_val(currentstatus[9], col_var_bounds[2], col_var_bounds[2]/2)
-				new_a = get_new_color_value(currentstatus[10], col_var_bounds[3])
-
-				lines.append([(currentstatus[0],currentstatus[1]), (end_x,end_y)])
-				linecolors.append((new_r, new_g, new_b, new_a))
-				linethicknesses.append(currentstatus[6])
-
-				s.append([
-						end_x,
-						end_y,
-						currentstatus[2]*currentstatus[5],#*math.pow(currentstatus[5],i+1),
-						new_angle,
-						currentstatus[4] + rayvariation,
-						currentstatus[5],
-						currentstatus[6] + widthvariation,
-						new_r,
-						new_g,
-						new_b,
-						new_a
-					])
-
-			if middlestar:
-				new_r = get_noized_color_val(currentstatus[7], col_var_bounds[0], col_var_bounds[0]/2)
-				new_g = get_noized_color_val(currentstatus[8], col_var_bounds[1], col_var_bounds[1]/2)
-				new_b = get_noized_color_val(currentstatus[9], col_var_bounds[2], col_var_bounds[2]/2)
-				new_a = get_new_color_value(currentstatus[10], col_var_bounds[3])
-
-				s.append([
-						currentstatus[0],
-						currentstatus[1],
-						currentstatus[2]*currentstatus[5],#*math.pow(currentstatus[5],i+1),
-						currentstatus[3],
-						currentstatus[4] + rayvariation,
-						currentstatus[5],
-						currentstatus[6] + widthvariation,
-						new_r,
-						new_g,
-						new_b,
-						new_a
-					])
-
-	print "iterations: " + str(iteration)
-
-	segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
-	
-	if save:
-		starname = "star_" + str(startrays) + "_" + str(rayvariation) + "_%.2f_" % startlength + str(lengthfactor) + "_" + str(startwidth) + "_" + str(widthvariation) + "_[%.2f, %.2f, %.2f, %.2f]_rand" % (col_start[0], col_start[1], col_start[2], col_start[3])
-		if not os.path.exists(dicname):
-			os.makedirs(dicname+"/")
-		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], 'black'):
-			starname += "_"
-	else:
-		print_linecollection(segments, [xmin, xmax, ymin, ymax], 'black')
-
-###################################################################
-# A function that creates star with QUADRATIC random colorvariation
+# A function that creates star as specified by the init_dict
 ###################################################################
 # startlength: 		inital length of rays
 # lengthfactor:		factor by which length of rays is shortenend in each iteration
@@ -339,21 +288,94 @@ def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvar
 
 # safe:			if True, star is saved as image
 # middlestar:		if True, each iteration also draws a star at each startpoint
-def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvariation, startwidth, widthvariation, col_start, col_var_bound, save, middlestar=False):
+#def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvariation, startwidth, widthvariation, col_start, col_var_bound, save, middlestar=False):
+def printstar_nonrek_colorvariation(init_dict):
+	# init:
+	startlength 	= init_dict['raylength_start']
+	startrays 		= init_dict['raynumber_start']
+	startwidth 		= init_dict['raywidth_start']
+	col_start 		= [init_dict['color_r_start'], init_dict['color_g_start'], init_dict['color_b_start'], init_dict['color_a_start']]
+
+	# global modifiing rules:
+	vlength_global 	= init_dict['raylength_vglobal']
+	num_vlg = len(vlength_global)
+
+	vnumber_global 	= init_dict['raynumber_vglobal']
+	num_vng = len(vnumber_global)
+
+	vwidth_global 	= init_dict['raywidth_vglobal']
+	num_vwg = len(vwidth_global)
+
+	vcolor_global 	= [init_dict['color_r_vglobal'], init_dict['color_g_vglobal'], init_dict['color_b_vglobal'], init_dict['color_a_vglobal']]
+
+	# global-by-ray modifiing rules:
+	vlength_ray 	= init_dict['raylength_vray']
+	num_vlr = len(vlength_ray)
+
+	vnumber_ray		= init_dict['raynumber_vray']
+	num_vnr = len(vnumber_ray)
+
+	vwidth_ray		= init_dict['raywidth_vray']
+	num_vwr = len(vwidth_ray)
+
+	vcolor_ray 	= [init_dict['color_r_vray'], init_dict['color_g_vray'], init_dict['color_b_vray'], init_dict['color_a_vray']]
+
+	# local modifiing rules:	
+	vcolor_local 	= [init_dict['color_r_vlocal'], init_dict['color_g_vlocal'], init_dict['color_b_vlocal'], init_dict['color_a_vlocal']]
+
+	# color normalization:
+	opt_norm_color  = init_dict['color_normalize']
+
+	# other parameters:
+	middlestar 		= init_dict['centerstar']
+	maxiter 		= init_dict['iterations']
+	save 			= init_dict['savetofile']
+	background		= init_dict['background']
+
 	currentdate = date.today()
-	dicname = "stars_" + date.isoformat(currentdate)
-	maxiter = 1000000
+
+	oh = OutputHandler()
+	oh.set_background(background)
+	oh.init_output()
+
+	# create starname:
+	starname_1 = startrays+startlength+startwidth
+		
+	max_length_global = max(num_vlg, num_vng, num_vwg)
+	starname_2 = [a+b+c for a,b,c in zip(
+		vlength_global+[0]*(max_length_global-num_vlg),
+		vnumber_global+[0]*(max_length_global-num_vng),
+		vwidth_global+[0]*(max_length_global-num_vwg))
+	]
+
+	max_length_ray = max(num_vlr, num_vnr, num_vwr)
+	starname_3 = [a+b+c for a,b,c in zip(
+		vlength_ray+[0]*(max_length_ray-num_vlr),
+		vnumber_ray+[0]*(max_length_ray-num_vnr),
+		vwidth_ray+[0]*(max_length_ray-num_vwr))
+	]
+
+	starname_4 = [a+b+c+d for a,b,c,d in zip(
+		col_start,
+		vcolor_global[0],
+		vcolor_ray[0],
+		vcolor_local)
+	]
+
+	starname_5,k = re.sub(r'0*','',str(maxiter))
+
+	starname = "star_"+str(starname_1)+str(starname_2)+str(starname_3)+str(starname_4)+str(maxiter)
+	starname,k = re.subn(r'\.','',starname)
+	starname,k = re.subn(r'[,\[\]0\s]*','',starname)
+
+	print "name of star : "+starname
+
+	oh.init_outputfile(starname)
+
+	savestepsize = 5000
 
 	color_delta = 0.0
-	color_delta_bound = col_var_bound/2
-
-	print ("startlength    : %.2f" % startlength)
-	print ("lengthfactor   : %.2f" % lengthfactor)
-	print ("startrays      : %.2f" % startrays)
-	print ("rayvariation   : %.2f" % rayvariation)
-	print ("startwidth     : %.2f" % startwidth)
-	print ("widthvariation : %.2f" % widthvariation)
-	print ("col_start      : [%.2f, %.2f, %.2f, %.2f]" % (col_start[0], col_start[1], col_start[2], col_start[3]))
+	color_delta_bound = vcolor_local[0]/2
 
 	s = []
 
@@ -368,137 +390,131 @@ def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvar
 
 	# format of status:
 	# [
-	# 0:  start_x,
-	# 1:  start_y,
-	# 2:  length,
-	# 3:  angle,
-	# 4:  number_of_rays,
-	# 5:  lengthfactor,
+	# 0:  depth
+	# 1:  start_x,
+	# 2:  start_y,
+	# 3:  length,
+	# 4:  angle,
+	# 5:  number_of_rays,
 	# 6:  linewidth,
 	# 7:  [color_r, color_g, color_b, color_a],
 	# 8:  [dr, dg, db]
 	# ]
-	status = [0.0,0.0, startlength, (1.5+(1.0/startrays))*math.pi, startrays, lengthfactor, startwidth, [col_start[0], col_start[1], col_start[2], col_start[3]], [color_delta, color_delta, color_delta]]
+	status = [0, 0.0, 0.0, startlength, (1.5+(1.0/startrays))*math.pi, startrays, startwidth, [col_start[0], col_start[1], col_start[2], col_start[3]], [color_delta, color_delta, color_delta]]
 	s.append(status)
 
 	iteration = 0
 
-	while len(s) > 0:
-		
+	while len(s) > 0:		
 		currentstatus = s.pop()
-
+			
 		iteration += 1
-		if iteration%10000 == 0:
+		if iteration%savestepsize == 0:
 			print iteration
 
+			if len(lines)>0:
+				
+				oh.save_line_data(lines, linecolors, linethicknesses, iteration/savestepsize)
+
+				lines = []
+				linecolors = []
+				linethicknesses = []
+
 		if iteration > maxiter:
-			print "Too big"
+			print "Maximum number of iterations reached. Stop."
 			break
 
-		rays = int(currentstatus[4])
+		rays = int(currentstatus[5])
 
-		if currentstatus[2] >= 1 and currentstatus[4] >= 1 and currentstatus[4] <=10:
+		if currentstatus[3] >= 1 and currentstatus[5] >= 1 and currentstatus[5] <=50:
 
 			delta_angle = 2*math.pi/rays
 
 			color_current = currentstatus[7]
-			colordelta_current = currentstatus[8]			
 
+			nextlength = currentstatus[3] * vlength_global[currentstatus[0]%num_vlg]
+			nextnumber = currentstatus[5] + vnumber_global[currentstatus[0]%num_vng]
+			nextwidth  = currentstatus[6] + vwidth_global[currentstatus[0]%num_vwg]
+			
 			for i in range(0, rays):
-				new_angle = currentstatus[3] + i*delta_angle
-				end_x = currentstatus[0] + math.cos(new_angle)*currentstatus[2]
-				end_y = currentstatus[1] - math.sin(new_angle)*currentstatus[2]
+				new_angle = currentstatus[4] + i*delta_angle
+				end_x = currentstatus[1] + math.cos(new_angle)*currentstatus[3]
+				end_y = currentstatus[2] - math.sin(new_angle)*currentstatus[3]
 
 				xmin = min(xmin, end_x)
 				xmax = max(xmax, end_x)
 				ymin = min(ymin, end_y)
 				ymax = max(ymax, end_y)
 
-				new_r = get_noized_color_value(color_current[0], col_var_bound, 0, colordelta_current[0])
-				new_g = get_noized_color_value(color_current[1], col_var_bound, 0, colordelta_current[1])
-				new_b = get_noized_color_value(color_current[2], col_var_bound, 0, colordelta_current[2])
-				new_a = norm_value(get_noized_color_value(color_current[3], col_var_bound))
+				new_color = [0,0,0,0]
+				for c in range(4):
+					new_color[c] = get_new_color_value(color_current[c], vcolor_global[c], currentstatus[0], vcolor_ray[c], i, vcolor_local[c], 0)
 
-				[nr, ng, nb] = norm_color(new_r, new_g, new_b)
-	
-				new_dr = norm_value(get_noized_value(colordelta_current[0], color_delta_bound/2), -color_delta_bound, color_delta_bound)
-				new_dg = norm_value(get_noized_value(colordelta_current[1], color_delta_bound/2), -color_delta_bound, color_delta_bound)
-				new_db = norm_value(get_noized_value(colordelta_current[2], color_delta_bound/2), -color_delta_bound, color_delta_bound)
+				if opt_norm_color:
+					[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
+				else:
+					[nr, ng, nb] = new_color[0:3]
 
-				lines.append([(currentstatus[0],currentstatus[1]), (end_x,end_y)])
-				linecolors.append((new_r, new_g, new_b, new_a))
-				linethicknesses.append(currentstatus[6])
+				lines.append([(currentstatus[1],currentstatus[2]), (end_x,end_y)])
+				linecolors.append((nr, ng, nb, new_color[3]))
+				linethicknesses.append(currentstatus[6])				
 
 				s.append([
+						currentstatus[0]+1,
 						end_x,
 						end_y,
-						currentstatus[2]*currentstatus[5],#*math.pow(currentstatus[5],i+1),
+						nextlength * vlength_ray[i%num_vlr],
 						new_angle,
-						currentstatus[4] + rayvariation,
-						currentstatus[5],
-						currentstatus[6] + widthvariation,
-						[nr, ng, nb, new_a],
-						[new_dr, new_dg, new_db]
+						nextnumber + vnumber_ray[i%num_vnr],
+						nextwidth + vwidth_ray[i%num_vwr],
+						[nr, ng, nb, new_color[3]]#,
+					#	[new_dr, new_dg, new_db]
 					])
 
 			if middlestar:
-				new_r = get_noized_color_value(color_current[0], col_var_bound, 0, colordelta_current[0])
-				new_g = get_noized_color_value(color_current[1], col_var_bound, 0, colordelta_current[1])
-				new_b = get_noized_color_value(color_current[2], col_var_bound, 0, colordelta_current[2])
-				new_a = norm_value(get_noized_color_value(color_current[3], col_var_bound))
+				new_color = [0,0,0,0]
+				for c in range(4):
+					new_color[c] = get_new_color_value(color_current[c], vcolor_global[c], currentstatus[0], vcolor_ray[c], i, vcolor_local[c], 0)
 
-				[nr, ng, nb] = norm_color(new_r, new_g, new_b)
-
-				new_dr = norm_value(get_noized_value(colordelta_current[0], color_delta_bound/2), -color_delta_bound, color_delta_bound)
-				new_dg = norm_value(get_noized_value(colordelta_current[1], color_delta_bound/2), -color_delta_bound, color_delta_bound)
-				new_db = norm_value(get_noized_value(colordelta_current[2], color_delta_bound/2), -color_delta_bound, color_delta_bound)
+				if opt_norm_color:
+					[nr, ng, nb] = norm_color(new_color[0], new_color[1], new_color[2])
+				else:
+					[nr, ng, nb] = new_color[0:3]
 
 				s.append([
-						currentstatus[0],
+						currentstatus[0]+1,
 						currentstatus[1],
-						currentstatus[2]*currentstatus[5],#*math.pow(currentstatus[5],i+1),
-						currentstatus[3],
-						currentstatus[4] + rayvariation,
-						currentstatus[5],
-						currentstatus[6] + widthvariation,
-						[nr, ng, nb, new_a],
-						[new_dr, new_dg, new_db]
+						currentstatus[2],
+						nextlength,
+						currentstatus[4],
+						nextnumber,
+						nextwidth,
+						[nr, ng, nb, new_color[3]]#,
+					#	[new_dr, new_dg, new_db]
 					])
 
 	print "iterations: " + str(iteration)
 
-	segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
-	
+	oh.set_dimensions([xmin, xmax, ymin, ymax])
+
+	oh.plt_collections_from_files(iteration/savestepsize)
+	if (len(lines)>0):
+		segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
+		oh.plt_collection(segments)
+
 	if save:
-		starname = "star_" + str(startrays) + "_" + str(rayvariation) + "_%.2f_" % startlength + str(lengthfactor) + "_" + str(startwidth) + "_" + str(widthvariation) + "_[%.2f, %.2f, %.2f, %.2f]_rand" % (col_start[0], col_start[1], col_start[2], col_start[3])
-		if not os.path.exists(dicname):
-			os.makedirs(dicname+"/")
-		while not write_linecollection_to_file(dicname+"/"+starname + ".png", segments, [xmin, xmax, ymin, ymax], 'white'):
-			starname += "_"
+		print "Creating output image..."
+		oh.set_img_size(init_dict['out_dim_x'], init_dict['out_dim_y'])
+		oh.save_to_file()
+
 	else:
-		print_linecollection(segments, [xmin, xmax, ymin, ymax], 'black')
+		oh.show_plot()
 
-# the length of the rays in the first iteration:
-startlength = 600
-# the factor by which the lengths get modified in each step (shoul be within [0,1) )
-lengthfactor = 0.35#(2/6.0)
-# the number of rays at the first iteration (int):
-startrays = 8
-# the total variation of the number of rays per iteration (does not need to be integer):
-rayvariation = -1
-# the linewidth in first iteration:
-width = 0.1
-# the variation of the linewidth per iteration:
-widthvariation = 0.2
-# a list with four elements defining the color of the zeroth iteration (r,g,b,a):
-color = [0.5, 0.5, 0.5, 1.0]
-# color variation per iteration, or bounds to the random color variation (depending on which method is used)
-c_v = 0.1
-a_v = 0.0
-color_variation = [c_v, c_v, c_v, a_v]
-# a bool describing if the output should be written to a file or shown (True = write to file):
-write_to_file = True
-# set to true to activate an additional recursive star added at the center of each star:
-middlestar = True
+if len(sys.argv)>1:
+	init_file = sys.argv[1]
+else:
+	init_file = 'Init/test'
 
-printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvariation, width, widthvariation, color, c_v, write_to_file, middlestar)
+init = load_init(init_file)
+
+printstar_nonrek_colorvariation(init)

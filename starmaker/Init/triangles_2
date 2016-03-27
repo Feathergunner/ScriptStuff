@@ -6,7 +6,7 @@
 # Parameters describing the length of rays:
 ###########################################################################################
 # the length of the rays in the first iteration:
-raylength_start = 100
+raylength_start = 300
 
 # the factor by which the lengths get modified in each step (shoul be within [0,1) )
 # global:
@@ -38,7 +38,7 @@ raywidth_start = 1
 
 # the variation of the linewidth per iteration:
 # global:
-raywidth_vglobal = [-0.2]
+raywidth_vglobal = [-0.1]
 # global by raynumber:
 raywidth_vray = [0]
 # random local variation bounds:
@@ -55,23 +55,23 @@ raywidth_maximum = 5
 color_r_start = 0
 color_g_start = 0
 color_b_start = 0
-color_a_start = 1
+color_a_start = 0.5
 
 # color variation:
 # global:
 color_r_vglobal = [0]
 color_g_vglobal = [0]
 color_b_vglobal = [0]
-color_a_vglobal = [0]
+color_a_vglobal = [0.1]
 # global, by ray:
-color_r_vray = [0.15,0,0]
-color_g_vray = [0,0.15,0]
-color_b_vray = [0,0,0.15]
+color_r_vray = [0.25,-0.05,-0.05]
+color_g_vray = [-0.05,0.25,-0.05]
+color_b_vray = [-0.2,-0.2,0.2]
 color_a_vray = [0]
 # local random variation bound:
-color_r_vlocal = 0.03
-color_g_vlocal = 0.03
-color_b_vlocal = 0.03
+color_r_vlocal = 0.05
+color_g_vlocal = 0.05
+color_b_vlocal = 0.05
 color_a_vlocal = 0
 
 # normalize colors (to increase contrast, but can distort color gradient)
@@ -87,7 +87,7 @@ centerstar = True
 # Parameters concerning the computation and output:
 ###########################################################################################
 # the maximum number of iterations the algorithm computes before stopping:
-iterations = 100000
+iterations = 500000
 
 # the background color (white / black):
 background = black
@@ -98,5 +98,5 @@ background = black
 savetofile = True
 
 # dimensions of output-image in pixel:
-out_dim_x = 2000
-out_dim_y = 2000
+out_dim_x = 4000
+out_dim_y = 4000
