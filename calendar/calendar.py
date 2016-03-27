@@ -5,7 +5,7 @@ import re
 from subprocess import call
 
 class calendar_constructor:
-	inputfilename = "data.txt"
+	inputfilename = "my_data.txt"
 
 	year = 0
 	first_day_of_months = [0,0,0,0,0,0,0,0,0,0,0,0]
