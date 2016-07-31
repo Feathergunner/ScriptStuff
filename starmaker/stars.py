@@ -581,7 +581,7 @@ def printstar_nonrek_colorvariation(init_dict):
 if len(sys.argv)>1:
 	init_file = sys.argv[1]
 else:
-	init_file = 'init_test_2'
+	init_file = 'Init/test'
 
 #init = load_init(init_file)
 
