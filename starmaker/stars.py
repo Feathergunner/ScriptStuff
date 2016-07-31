@@ -271,10 +271,74 @@ def create_starname(init_dict):
 
 	return starname
 
+def get_init_by_date():
+    today = date.today()
+    y = today.year
+    m = today.month
+    d = today.day
+    return get_init_by_triple(y,m,d)
+
+def get_init_by_triple(a,b,c):
+    init = {}
+    length_ray_cycle_1 = (a+(3*c))%5 + 1
+    length_ray_cycle_2 = (a+(11*b))%((7*c)%4) + 2
+    init['raylength_start'] = 100.0
+    init['raylength_vglobal'] = [0.57-((float((3*b+7*c)%10))/100)]
+    init['raylength_vray'] = [1.0]*length_ray_cycle_1
+    for i in range(length_ray_cycle_1):
+    	init['raylength_vray'][i] -= 1.0/((i+1)*((a+3*b)%4) + (abs(7*c-b))%5 + 20)
+
+    init['raynumber_start'] = (a + 5*c)%3 + 3.0
+    init['raynumber_vglobal'] = [-1.0 / ((31*b+29*c)%11 + 6)]
+    init['raynumber_vray'] = [0.0]*length_ray_cycle_2
+    for i in range(length_ray_cycle_2):
+    	init['raynumber_vray'][i] += ((i*c)%5 - 3.0)/((23*b+17*c)%10+4)
+
+    init['raywidth_start'] = 0.5
+    init['raywidth_vglobal'] = [0.0]
+    init['raywidth_vray'] = [0.0]
+
+    init['color_r_start'] = 0.5
+    init['color_g_start'] = 0.5
+    init['color_b_start'] = 0.5
+    init['color_a_start'] = 1.0
+    #init['col_var_bound'] = 
+
+    init['color_r_vglobal'] = [0.0]
+    init['color_g_vglobal'] = [0.0]
+    init['color_b_vglobal'] = [0.0]
+    init['color_a_vglobal'] = [0.0]
+
+    init['color_r_vray'] = [0.0]
+    init['color_g_vray'] = [0.0]
+    init['color_b_vray'] = [0.0]
+    init['color_a_vray'] = [0.0]
+
+    init['color_r_vlocal'] = 0.1
+    init['color_g_vlocal'] = 0.1
+    init['color_b_vlocal'] = 0.1
+    init['color_a_vlocal'] = 0.0
+
+    init['color_normalize'] = True
+
+    init['savetofile'] = True
+    init['centerstar'] = False
+    if (17*c*b%3) == 0:
+        init['centerstar'] = True
+    init['background'] = 'black'
+    init['iterations'] = 100000.0
+
+    init['out_dim_x'] = 1500
+    init['out_dim_y'] = 1500
+    init['starname']  = "star_triple_" + str(a) + "-" + str(b) + "-" + str(c)
+
+    return init
+    
+
 ###################################################################
 # A function that creates star as specified by the init_dict
 ###################################################################
-# startlength: 		inital length of rays
+# startlength: 		inital length of locals
 # lengthfactor:		factor by which length of rays is shortenend in each iteration
 
 # startrays:		initial number of rays
@@ -290,6 +354,7 @@ def create_starname(init_dict):
 # middlestar:		if True, each iteration also draws a star at each startpoint
 #def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvariation, startwidth, widthvariation, col_start, col_var_bound, save, middlestar=False):
 def printstar_nonrek_colorvariation(init_dict):
+	print init_dict
 	# init:
 	startlength 	= init_dict['raylength_start']
 	startrays 		= init_dict['raynumber_start']
@@ -339,34 +404,37 @@ def printstar_nonrek_colorvariation(init_dict):
 	oh.init_output()
 
 	# create starname:
-	starname_1 = startrays+startlength+startwidth
-		
-	max_length_global = max(num_vlg, num_vng, num_vwg)
-	starname_2 = [a+b+c for a,b,c in zip(
-		vlength_global+[0]*(max_length_global-num_vlg),
-		vnumber_global+[0]*(max_length_global-num_vng),
-		vwidth_global+[0]*(max_length_global-num_vwg))
-	]
+	if 'starname' in init_dict:
+		starname = init_dict['starname']
+	else:
+		starname_1 = startrays+startlength+startwidth
+			
+		max_length_global = max(num_vlg, num_vng, num_vwg)
+		starname_2 = [a+b+c for a,b,c in zip(
+			vlength_global+[0]*(max_length_global-num_vlg),
+			vnumber_global+[0]*(max_length_global-num_vng),
+			vwidth_global+[0]*(max_length_global-num_vwg))
+		]
 
-	max_length_ray = max(num_vlr, num_vnr, num_vwr)
-	starname_3 = [a+b+c for a,b,c in zip(
-		vlength_ray+[0]*(max_length_ray-num_vlr),
-		vnumber_ray+[0]*(max_length_ray-num_vnr),
-		vwidth_ray+[0]*(max_length_ray-num_vwr))
-	]
+		max_length_ray = max(num_vlr, num_vnr, num_vwr)
+		starname_3 = [a+b+c for a,b,c in zip(
+			vlength_ray+[0]*(max_length_ray-num_vlr),
+			vnumber_ray+[0]*(max_length_ray-num_vnr),
+			vwidth_ray+[0]*(max_length_ray-num_vwr))
+		]
 
-	starname_4 = [a+b+c+d for a,b,c,d in zip(
-		col_start,
-		vcolor_global[0],
-		vcolor_ray[0],
-		vcolor_local)
-	]
+		starname_4 = [a+b+c+d for a,b,c,d in zip(
+			col_start,
+			vcolor_global[0],
+			vcolor_ray[0],
+			vcolor_local)
+		]
 
-	starname_5,k = re.sub(r'0*','',str(maxiter))
+		starname_5,k = re.sub(r'0*','',str(maxiter))
 
-	starname = "star_"+str(starname_1)+str(starname_2)+str(starname_3)+str(starname_4)+str(maxiter)
-	starname,k = re.subn(r'\.','',starname)
-	starname,k = re.subn(r'[,\[\]0\s]*','',starname)
+		starname = "star_"+str(starname_1)+str(starname_2)+str(starname_3)+str(starname_4)+str(maxiter)
+		starname,k = re.subn(r'\.','',starname)
+		starname,k = re.subn(r'[,\[\]0\s]*','',starname)
 
 	print "name of star : "+starname
 
@@ -513,8 +581,10 @@ def printstar_nonrek_colorvariation(init_dict):
 if len(sys.argv)>1:
 	init_file = sys.argv[1]
 else:
-	init_file = 'Init/test'
+	init_file = 'init_test_2'
 
-init = load_init(init_file)
+#init = load_init(init_file)
+
+init = get_init_by_date()
 
 printstar_nonrek_colorvariation(init)
