@@ -281,7 +281,7 @@ def get_init_by_date():
 def get_init_by_triple(a,b,c):
     init = {}
     length_ray_cycle_1 = (a+(3*c))%5 + 1
-    length_ray_cycle_2 = (a+(11*b))%((7*c)%4) + 2
+    length_ray_cycle_2 = (a+(11*b))%((7*c)%4+1) + 2
     init['raylength_start'] = 100.0
     init['raylength_vglobal'] = [0.57-((float((3*b+7*c)%10))/100)]
     init['raylength_vray'] = [1.0]*length_ray_cycle_1
@@ -292,15 +292,16 @@ def get_init_by_triple(a,b,c):
     init['raynumber_vglobal'] = [-1.0 / ((31*b+29*c)%11 + 6)]
     init['raynumber_vray'] = [0.0]*length_ray_cycle_2
     for i in range(length_ray_cycle_2):
-    	init['raynumber_vray'][i] += ((i*c)%5 - 3.0)/((23*b+17*c)%10+4)
+    	init['raynumber_vray'][i] += (((i*c)%5 - 3.0)/((23*b+17*c)%10+4)) * (init['raynumber_start']-3.5)
+
 
     init['raywidth_start'] = 0.5
     init['raywidth_vglobal'] = [0.0]
     init['raywidth_vray'] = [0.0]
 
-    init['color_r_start'] = 0.5
-    init['color_g_start'] = 0.5
-    init['color_b_start'] = 0.5
+    init['color_r_start'] = 1.0/((a+7)%5+1.5)
+    init['color_g_start'] = 1.0/((a+11)%5+1.5)
+    init['color_b_start'] = 1.0/((a+13)%5+1.5)
     init['color_a_start'] = 1.0
     #init['col_var_bound'] = 
 
@@ -314,9 +315,9 @@ def get_init_by_triple(a,b,c):
     init['color_b_vray'] = [0.0]
     init['color_a_vray'] = [0.0]
 
-    init['color_r_vlocal'] = 0.1
-    init['color_g_vlocal'] = 0.1
-    init['color_b_vlocal'] = 0.1
+    init['color_r_vlocal'] = 1.0/(5*(a%5)+2.5)
+    init['color_g_vlocal'] = 1.0/(5*((a+b)%5)+2.5)
+    init['color_b_vlocal'] = 1.0/(5*((2*a+c)%5)+2.5)
     init['color_a_vlocal'] = 0.0
 
     init['color_normalize'] = True
