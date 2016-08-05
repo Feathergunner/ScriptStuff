@@ -280,28 +280,91 @@ def get_init_by_date():
 
 def get_init_by_triple(a,b,c):
     init = {}
-    length_ray_cycle_1 = (a+(3*c))%5 + 1
-    length_ray_cycle_2 = (a+(11*b))%((7*c)%4+1) + 2
+
+    # numbers of rays:
+    raynumber_start = (a + 5*c)%3 + (b*c)%3 + (a+b+c)%2 + 2.0
+    init['raynumber_start'] = raynumber_start
+
+
+    length_ray_cycle_1 = min(int(raynumber_start), (a+(3*c))%5 + 1)
+    length_ray_cycle_2 = min(int(raynumber_start), (a+(11*b))%((7*c)%4+1) + 2)
+
+    # base: iid in ~[0.05 , 0.5] times a factor depending on initial number of rays
+    raynumber_vglobal_base = (((31*b+29*c)%11 + 1.0) / 22.0) * (3.5 / raynumber_start)**(0.5)
+
+    raynumber_vray_base = [0.0]*length_ray_cycle_2
+    for i in range(length_ray_cycle_2):
+    	raynumber_vray_base[i] += float((i*c)%5 + (a*b+c)%3)/((23*b+17*c)%10+12)
+
+    # move factor depending on initial number of rays:
+    if raynumber_start <= 2.5:
+    	init['raynumber_vglobal'] = [raynumber_vglobal_base + 0.4]
+    	init['raynumber_vray']    = [x*1.2 for x in raynumber_vray_base]
+    elif raynumber_start <= 3.5:
+    	init['raynumber_vglobal'] = [raynumber_vglobal_base - 0.1]
+    	init['raynumber_vray']    = [(x - 0.15)*1.2 for x in raynumber_vray_base]
+    elif raynumber_start <= 4.5:
+    	init['raynumber_vglobal'] = [(raynumber_vglobal_base - 0.25)]
+    	init['raynumber_vray']    = [x - 0.25 for x in raynumber_vray_base]
+    elif raynumber_start <= 5.5:
+    	init['raynumber_vglobal'] = [raynumber_vglobal_base - 0.4]
+    	init['raynumber_vray']    = [x - 0.3 for x in raynumber_vray_base]
+    elif raynumber_start <= 6.5:
+    	init['raynumber_vglobal'] = [raynumber_vglobal_base - 0.55]
+    	init['raynumber_vray']    = [x - 0.4 for x in raynumber_vray_base]
+    else:
+    	init['raynumber_vglobal'] = [raynumber_vglobal_base - 0.8]
+    	init['raynumber_vray']    = [x - 0.5 for x in raynumber_vray_base]
+
+    #print "raynumber_vglobal: " + str(init['raynumber_vglobal'])
+    #print "raynumber_vray:"
+    #print (init['raynumber_vray'])
+
+    medium_var_raynumber = init['raynumber_vglobal'][0] + (sum(init['raynumber_vray']) / length_ray_cycle_2)
+
+    #print "medium_var_raynumber: " + str(medium_var_raynumber)
+
+    # lengths of rays:
     init['raylength_start'] = 100.0
-    init['raylength_vglobal'] = [0.57-((float((3*b+7*c)%10))/100)]
+    raylength_vglobal_base = 0.6-((float((7*b+3*c)%10))/100) * (3.5 / raynumber_start)
+    init['raylength_vglobal'] = [raylength_vglobal_base]
+
     init['raylength_vray'] = [1.0]*length_ray_cycle_1
     for i in range(length_ray_cycle_1):
-    	init['raylength_vray'][i] -= 1.0/((i+1)*((a+3*b)%4) + (abs(7*c-b))%5 + 20)
+    	init['raylength_vray'][i] -= 1.0/((i+1)*((a+3*b)%7) + (abs(7*c-b))%5 + 15)
 
-    init['raynumber_start'] = (a + 5*c)%3 + 3.0
-    init['raynumber_vglobal'] = [-1.0 / ((31*b+29*c)%11 + 6)]
-    init['raynumber_vray'] = [0.0]*length_ray_cycle_2
-    for i in range(length_ray_cycle_2):
-    	init['raynumber_vray'][i] += (((i*c)%5 - 3.0)/((23*b+17*c)%10+4)) * (init['raynumber_start']-3.5)
+    medium_var_raylength = (sum(init['raylength_vray']) * init['raylength_vglobal'][0]) / length_ray_cycle_1
 
+    #print "medium_var_raylength: " + str(medium_var_raylength)
+    #print "raylength_vglobal pre-fit: " +str(init['raylength_vglobal'][0])
 
+    diff = -1
+    if medium_var_raynumber > 0:
+    	diff = 0
+    elif medium_var_raynumber > -0.5:
+    	diff = max(abs(medium_var_raynumber)**(1.8), abs(medium_var_raynumber)*0.25)
+
+    if diff == 0:
+    	if medium_var_raylength + medium_var_raynumber > 1.0:
+    		diff += init['raylength_vglobal'][0]*0.1
+    	elif medium_var_raylength + medium_var_raynumber > 0.5:
+    		diff += (medium_var_raylength + medium_var_raynumber - 0.5)*1.1
+
+    if diff > 0:
+    	#print "diff: " + str(diff)
+    	init['raylength_vglobal'][0] -= diff
+
+    #print "raylength_vglobal post-fit: " +str(init['raylength_vglobal'][0])
+
+    # widths of rays (constant):
     init['raywidth_start'] = 0.5
     init['raywidth_vglobal'] = [0.0]
     init['raywidth_vray'] = [0.0]
 
-    init['color_r_start'] = 1.0/((a+7)%5+1.5)
-    init['color_g_start'] = 1.0/((a+11)%5+1.5)
-    init['color_b_start'] = 1.0/((a+13)%5+1.5)
+    # colors:
+    init['color_r_start'] = 1.0/((a+7)%5+2.5)
+    init['color_g_start'] = 1.0/((a+11)%5+2.5)
+    init['color_b_start'] = 1.0/((a+13)%5+2.5)
     init['color_a_start'] = 1.0
     #init['col_var_bound'] = 
 
@@ -315,16 +378,16 @@ def get_init_by_triple(a,b,c):
     init['color_b_vray'] = [0.0]
     init['color_a_vray'] = [0.0]
 
-    init['color_r_vlocal'] = 1.0/(5*(a%5)+2.5)
-    init['color_g_vlocal'] = 1.0/(5*((a+b)%5)+2.5)
-    init['color_b_vlocal'] = 1.0/(5*((2*a+c)%5)+2.5)
+    init['color_r_vlocal'] = 1.0/((a+b+5*c)%5 + 4.5)
+    init['color_g_vlocal'] = 1.0/((a+3*b+c)%5 + 4.5)
+    init['color_b_vlocal'] = 1.0/((2*a+b+c)%5 + 4.5)
     init['color_a_vlocal'] = 0.0
 
     init['color_normalize'] = True
 
     init['savetofile'] = True
     init['centerstar'] = False
-    if (17*c*b%3) == 0:
+    if raynumber_start < 6 and (17*c*b%3) == 0:
         init['centerstar'] = True
     init['background'] = 'black'
     init['iterations'] = 100000.0
@@ -355,7 +418,6 @@ def get_init_by_triple(a,b,c):
 # middlestar:		if True, each iteration also draws a star at each startpoint
 #def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvariation, startwidth, widthvariation, col_start, col_var_bound, save, middlestar=False):
 def printstar_nonrek_colorvariation(init_dict):
-	print init_dict
 	# init:
 	startlength 	= init_dict['raylength_start']
 	startrays 		= init_dict['raynumber_start']
@@ -397,6 +459,21 @@ def printstar_nonrek_colorvariation(init_dict):
 	maxiter 		= init_dict['iterations']
 	save 			= init_dict['savetofile']
 	background		= init_dict['background']
+
+	'''
+	print "Init:"
+	print "startrays: "+str(startrays)
+	print "raynumber_vglobal:" + str(vnumber_global)
+	print "raynumber_vray:"
+	print (vnumber_ray)
+	print "raylength_vglobal:" + str(vlength_global)
+	print "raylength_vray:"
+	print (vlength_ray)
+	print "col_start:"
+	print (col_start)
+	print "vcolor_local:"
+	print (vcolor_local)
+	'''
 
 	currentdate = date.today()
 
@@ -495,7 +572,7 @@ def printstar_nonrek_colorvariation(init_dict):
 
 		rays = int(currentstatus[5])
 
-		if currentstatus[3] >= 1 and currentstatus[5] >= 1 and currentstatus[5] <=50:
+		if currentstatus[3] >= 1 and currentstatus[5] >= 2 and currentstatus[5] <=10:
 
 			delta_angle = 2*math.pi/rays
 
@@ -507,6 +584,8 @@ def printstar_nonrek_colorvariation(init_dict):
 			
 			for i in range(0, rays):
 				new_angle = currentstatus[4] + i*delta_angle
+				if rays == 2:
+					new_angle += delta_angle/2
 				end_x = currentstatus[1] + math.cos(new_angle)*currentstatus[3]
 				end_y = currentstatus[2] - math.sin(new_angle)*currentstatus[3]
 
