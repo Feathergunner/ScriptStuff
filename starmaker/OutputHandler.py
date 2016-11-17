@@ -57,7 +57,7 @@ class OutputHandler:
 
 		self.is_initialized = True
 
-	def plt_collection(self, collection):
+	def plt_collection(self, collection, plot_every_frame=False, frame_number=0):
 		if self.is_initialized:
 			self.ax.add_collection(collection)
 			self.ax.plot()
@@ -65,12 +65,23 @@ class OutputHandler:
 
 			self.is_plotted = True
 
-	def save_to_file(self):
+			if (plot_every_frame):
+				orig_name = self.filename
+				name_ending = str(frame_number).zfill(8)
+				new_name = orig_name + "-" + name_ending
+				self.init_outputfile(new_name)
+				self.save_to_file(True)
+				self.init_outputfile(orig_name)
+				self.file_is_initialized = False
+
+	def save_to_file(self, keep_plt=False):
+		print ("save plt to file...")
 		if self.is_initialized and self.file_is_initialized and self.is_plotted:
 			self.fig.set_size_inches(self.dim_x/self.dpi_val, self.dim_y/self.dpi_val)
 
 			plt.savefig(self.filepath, dpi=self.dpi_val, facecolor=self.background)
-			plt.close()
+			if (not keep_plt):
+				plt.close()
 
 	def show_plot(self):
 		if self.is_initialized and self.is_plotted:
@@ -82,12 +93,18 @@ class OutputHandler:
 		with open(db_filename, 'w') as outfile:
 			json.dump([lines, linecolors, linethicknesses], outfile)
 
-	def plt_collections_from_files(self, number_of_files):
+	def plt_collections_from_files(self, number_of_files, plot_every_frame=False):
+		frame_number = 1
 		for i in range(1,number_of_files+1):
 			db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(i)
 			if os.path.isfile(db_filename):
 				with open(db_filename) as dbfile:
 					data = json.load(dbfile)
 					segments = clt.LineCollection(data[0], colors=data[1], linewidths=data[2], antialiaseds=0)
-					self.plt_collection(segments)
+					if (plot_every_frame):
+						self.set_img_size(500,500)
+						self.plt_collection(segments, True, frame_number)
+						frame_number += 1
+					else:
+						self.plt_collection(segments)
 				os.remove(db_filename)

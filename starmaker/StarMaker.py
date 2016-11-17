@@ -235,7 +235,7 @@ def get_init_by_triple(a,b,c):
 # safe:			if True, star is saved as image
 # middlestar:		if True, each iteration also draws a star at each startpoint
 #def printstar_nonrek_colorvariation(startlength, lengthfactor, startrays, rayvariation, startwidth, widthvariation, col_start, col_var_bound, save, middlestar=False):
-def printstar_nonrek_colorvariation(init_dict):
+def printstar_nonrek_colorvariation(init_dict, create_video=False):
 	# init:
 	startlength 	= init_dict['raylength_start']
 	startrays 		= init_dict['raynumber_start']
@@ -334,9 +334,12 @@ def printstar_nonrek_colorvariation(init_dict):
 
 	print "name of star : "+starname
 
-	oh.init_outputfile(starname)
-
-	savestepsize = 5000
+	if (not create_video):
+		savestepsize = 5000
+		oh.init_outputfile(starname)
+	else:
+		savestepsize = 10
+		oh.init_outputfile("star_vid")
 
 	color_delta = 0.0
 	color_delta_bound = vcolor_local[0]/2
@@ -402,8 +405,8 @@ def printstar_nonrek_colorvariation(init_dict):
 			
 			for i in range(0, rays):
 				new_angle = currentstatus[4] + i*delta_angle
-				if rays == 2:
-					new_angle += delta_angle/2
+				#if rays == 2:
+				#	new_angle += delta_angle/2
 				end_x = currentstatus[1] + math.cos(new_angle)*currentstatus[3]
 				end_y = currentstatus[2] - math.sin(new_angle)*currentstatus[3]
 
@@ -459,11 +462,12 @@ def printstar_nonrek_colorvariation(init_dict):
 					#	[new_dr, new_dg, new_db]
 					])
 
-	print "iterations: " + str(iteration)
+	if not create_video:
+		print "iterations: " + str(iteration)
 
 	oh.set_dimensions([xmin, xmax, ymin, ymax])
 
-	oh.plt_collections_from_files(iteration/savestepsize)
+	oh.plt_collections_from_files(iteration/savestepsize, create_video)
 	if (len(lines)>0):
 		segments = clt.LineCollection(lines, colors=linecolors, linewidths=linethicknesses, antialiaseds=0)
 		oh.plt_collection(segments)
