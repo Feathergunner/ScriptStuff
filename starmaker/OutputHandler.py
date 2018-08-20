@@ -89,13 +89,14 @@ class OutputHandler:
 			plt.close()
 
 	def save_line_data(self, lines, linecolors, linethicknesses, index):
-		db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(index)
+		db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(int(index))
 		with open(db_filename, 'w') as outfile:
 			json.dump([lines, linecolors, linethicknesses], outfile)
 
 	def plt_collections_from_files(self, number_of_files, plot_every_frame=False):
+		print ("plt_collections_from_files")
 		frame_number = 1
-		for i in range(1,number_of_files+1):
+		for i in range(1,int(number_of_files+1)):
 			db_filename = self.dirname+"/"+"db_"+self.filename+"_"+str(i)
 			if os.path.isfile(db_filename):
 				with open(db_filename) as dbfile:

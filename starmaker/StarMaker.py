@@ -9,6 +9,8 @@ import re
 
 import OutputHandler as outh
 
+GLOBAL_SAVESTEPSIZE = 5000
+
 def get_noized_color(color, maxdelta, mindelta=0.0):
 	for i in range(0,3):
 		color[i] = get_noized_color_val(color[i], maxdelta, mindelta)
@@ -332,10 +334,10 @@ def printstar_nonrek_colorvariation(init_dict, create_video=False):
 		starname,k = re.subn(r'\.','',starname)
 		starname,k = re.subn(r'[,\[\]0\s]*','',starname)
 
-	print "name of star : "+starname
+	print ("name of star : "+starname)
 
 	if (not create_video):
-		savestepsize = 5000
+		savestepsize = GLOBAL_SAVESTEPSIZE
 		oh.init_outputfile(starname)
 	else:
 		savestepsize = 10
@@ -377,7 +379,7 @@ def printstar_nonrek_colorvariation(init_dict, create_video=False):
 			
 		iteration += 1
 		if iteration%savestepsize == 0:
-			print iteration
+			print (iteration)
 
 			if len(lines)>0:
 				
@@ -388,7 +390,7 @@ def printstar_nonrek_colorvariation(init_dict, create_video=False):
 				linethicknesses = []
 
 		if iteration > maxiter:
-			print "Maximum number of iterations reached. Stop."
+			print ("Maximum number of iterations reached. Stop.")
 			break
 
 		rays = int(currentstatus[5])
@@ -463,7 +465,7 @@ def printstar_nonrek_colorvariation(init_dict, create_video=False):
 					])
 
 	if not create_video:
-		print "iterations: " + str(iteration)
+		print ("iterations: " + str(iteration))
 
 	oh.set_dimensions([xmin, xmax, ymin, ymax])
 
@@ -473,7 +475,7 @@ def printstar_nonrek_colorvariation(init_dict, create_video=False):
 		oh.plt_collection(segments)
 
 	if save:
-		print "Creating output image..."
+		print ("Creating output image...")
 		oh.set_img_size(init_dict['out_dim_x'], init_dict['out_dim_y'])
 		oh.save_to_file()
 
