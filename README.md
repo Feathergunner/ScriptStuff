@@ -18,3 +18,5 @@ is becoming a script to create mandala-like circular patterns.
 is a script to create recursive (pseudo-fractal) stars of colored lines. Depending on a large set of parameters, a lot of different outputs are possible. Parameters are specified by a file (see starmaker/Init). For example outputs, see starmaker/Example_Output.
 * Usage: create parameter file (see any file in starmaker/Init for information), then run `python stars.py path-to-parameterfile`
 * Almost finished, some functionalities not yet implemented. May be expanded in the future.
+
+![example](starmaker/Example_Output/star_344135.png)
